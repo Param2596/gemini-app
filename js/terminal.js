@@ -10,10 +10,12 @@ class RetroTerminal {
         this.isProcessing = false;
         this.lastTypingCancellation = null;
         this.currentConversationId = Date.now().toString();
+        this.attachedFiles = [];
         
         this.initializeEventListeners();
         this.initializeTerminal();
         this.initializeHistory(); // Add this line to initialize history functionality
+        this.initializeFileUpload();
         
         // Auto-save chat when window is closed
         window.addEventListener('beforeunload', () => {
@@ -340,30 +342,73 @@ class RetroTerminal {
     async sendMessage() {
         const message = this.userInput.value.trim();
         
-        if (message === '' || this.isProcessing || !window.geminiAPI) {
-            return;
-        }
+        // Allow sending just files without text
+        if (message === '' && this.attachedFiles.length === 0) return;
         
-        // Clear input field
-        this.userInput.value = '';
-        
-        // Add user message to chat
-        this.addMessage('user', message);
+        if (this.isProcessing || !window.geminiAPI) return;
         
         // Set processing state
         this.isProcessing = true;
         this.sendButton.disabled = true;
         document.getElementById('status-message').textContent = "PROCESSING";
         
+        // Clear input field
+        this.userInput.value = '';
+        
         try {
-            // Send to Gemini API
-            const response = await window.geminiAPI.sendMessage(message);
+            // Create display message with file info
+            let displayMessage = message;
+            if (this.attachedFiles.length > 0) {
+                const fileNames = this.attachedFiles.map(file => file.name).join(', ');
+                if (displayMessage) displayMessage += '\n\n';
+                displayMessage += `[Attached files: ${fileNames}]`;
+            }
+            
+            // Add user message to chat
+            this.addMessage('user', displayMessage);
+            
+            let response;
+            
+            // If we have files, process them
+            if (this.attachedFiles.length > 0) {
+                // Convert files to appropriate format
+                const filePromises = this.attachedFiles.map(file => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        
+                        reader.onload = () => {
+                            resolve({
+                                file: file,
+                                data: reader.result
+                            });
+                        };
+                        
+                        reader.onerror = () => {
+                            reject(new Error(`Failed to read file: ${file.name}`));
+                        };
+                        
+                        // Read file as data URL (base64)
+                        reader.readAsDataURL(file);
+                    });
+                });
+                
+                const fileData = await Promise.all(filePromises);
+                response = await window.geminiAPI.sendMessageWithFiles(message, fileData);
+                
+                // Clear attached files
+                this.attachedFiles = [];
+                document.getElementById('file-preview-container').innerHTML = '';
+                document.getElementById('file-preview-container').style.display = 'none';
+            } else {
+                // Regular message without files
+                response = await window.geminiAPI.sendMessage(message);
+            }
             
             // Add response to chat
             this.addMessage('bot', response);
         } catch (error) {
             console.error('Error sending message:', error);
-            this.addMessage('error', 'Failed to get response. Check the console for details.');
+            this.addMessage('error', `Failed to get response: ${error.message}`);
         } finally {
             // Reset processing state
             this.isProcessing = false;
@@ -724,5 +769,57 @@ class RetroTerminal {
         if (historyPanel && historyPanel.style.display !== 'none') {
             historyPanel.style.display = 'none';
         }
+    }
+
+    initializeFileUpload() {
+        const fileInput = document.getElementById('file-upload');
+        const previewContainer = document.getElementById('file-preview-container');
+        
+        // Handle file selection
+        fileInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length > 0) {
+                // Show the preview container
+                previewContainer.style.display = 'flex';
+                
+                // Process each file
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    // Check file size (20MB limit)
+                    if (file.size > 20 * 1024 * 1024) {
+                        this.addMessage('error', `File "${file.name}" exceeds 20MB size limit`);
+                        continue;
+                    }
+                    
+                    // Add to attached files
+                    this.attachedFiles.push(file);
+                    
+                    // Create preview element
+                    const preview = document.createElement('div');
+                    preview.className = 'file-preview';
+                    preview.innerHTML = `
+                        ${file.name}
+                        <span class="file-preview-remove" data-filename="${file.name}">×</span>
+                    `;
+                    
+                    // Add remove functionality
+                    preview.querySelector('.file-preview-remove').addEventListener('click', () => {
+                        this.attachedFiles = this.attachedFiles.filter(f => f.name !== file.name);
+                        preview.remove();
+                        
+                        // Hide container if empty
+                        if (this.attachedFiles.length === 0) {
+                            previewContainer.style.display = 'none';
+                        }
+                    });
+                    
+                    previewContainer.appendChild(preview);
+                }
+            }
+            
+            // Reset input so the same file can be selected again
+            fileInput.value = '';
+        });
     }
 }
