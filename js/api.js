@@ -33,7 +33,8 @@ class GeminiAPI {
     }
     
 
-    // Send message to Gemini API
+    // Update sendMessage method to include conversation history
+
     async sendMessage(message) {
         try {
             // Update status
@@ -42,23 +43,56 @@ class GeminiAPI {
             // Add user message to our tracking history
             this.addToHistory('user', message);
             
-            // First message should include system prompt
-            let messageToSend = message;
+            // Build the conversation content for the API request
+            const contents = [];
+            
+            // First message should include system prompt as a separate message
             if (this.history.length <= 2) {
-                messageToSend = `${CONFIG.SYSTEM_PROMPT}\n\nUser: ${message}`;
+                // For the first exchange, send system prompt separately followed by user message
+                contents.push({
+                    role: "user",
+                    parts: [{ text: CONFIG.SYSTEM_PROMPT }]
+                });
+                
+                contents.push({
+                    role: "model",
+                    parts: [{ text: "I understand and will act as SYNTRA with the personality you described." }]
+                });
+            } else {
+                // For subsequent exchanges, include all previous history up to a reasonable limit
+                // Start with system prompt
+                contents.push({
+                    role: "user", 
+                    parts: [{ text: CONFIG.SYSTEM_PROMPT }]
+                });
+                
+                contents.push({
+                    role: "model",
+                    parts: [{ text: "I understand and will act as SYNTRA with the personality you described." }]
+                });
+                
+                // Add conversation history (skipping first two items which were system messages)
+                // We use slice to limit history if it gets too long
+                // Limit to the last 10 exchanges (20 messages) to avoid token limits
+                const historyToInclude = this.history.slice(0, -1).slice(-20);
+                
+                for (const item of historyToInclude) {
+                    contents.push({
+                        role: item.role === 'user' ? 'user' : 'model',
+                        parts: [{ text: item.content }]
+                    });
+                }
             }
+            
+            // Add the current user message
+            contents.push({
+                role: "user",
+                parts: [{ text: message }]
+            });
 
-            // Create request body based on your model version
+            // Create request body with conversation history
             const requestBody = {
-                contents: [
-                    {
-                        parts: [
-                            {
-                                text: messageToSend
-                            }
-                        ]
-                    }
-                ],
+                contents: contents,
                 generationConfig: {
                     temperature: CONFIG.TEMPERATURE,
                     topK: CONFIG.TOP_K,
@@ -70,7 +104,7 @@ class GeminiAPI {
             // API endpoint
             const endpoint = `https://generativelanguage.googleapis.com/v1/models/${this.modelName}:generateContent?key=${this.apiKey}`;
             
-            console.log("Sending request to Gemini API...");
+            console.log("Sending request to Gemini API with conversation history...");
             
             // Make the API call
             const response = await fetch(endpoint, {
@@ -112,17 +146,23 @@ class GeminiAPI {
         }
     }
 
-    // Add this method to your GeminiAPI class
+    // Update sendMessageWithFiles to include conversation history
+
     async sendMessageWithFiles(message, files) {
         try {
             // Update status
             document.getElementById('status-message').textContent = "PROCESSING";
             
             // Add user message to our tracking history
-            this.addToHistory('user', message);
+            this.addToHistory('user', message || ""); // Handle empty message case
             
-            // Create parts array with the text message
-            const parts = [{ text: message || "" }];
+            // Create parts array for the current message including files
+            const currentParts = [];
+            
+            // Add text message if provided
+            if (message && message.trim()) {
+                currentParts.push({ text: message });
+            }
             
             // Add each file as a part
             for (const fileData of files) {
@@ -146,7 +186,7 @@ class GeminiAPI {
                 }
                 
                 // Add file part
-                parts.push({
+                currentParts.push({
                     inline_data: {
                         mime_type: mimeType,
                         data: base64Data
@@ -154,13 +194,40 @@ class GeminiAPI {
                 });
             }
             
+            // Build full conversation content including history
+            const contents = [];
+            
+            // Always include system prompt as the first message
+            contents.push({
+                role: "user",
+                parts: [{ text: CONFIG.SYSTEM_PROMPT }]
+            });
+            
+            contents.push({
+                role: "model",
+                parts: [{ text: "I understand and will act as SYNTRA with the personality you described." }]
+            });
+            
+            // Include conversation history (if not the first exchange)
+            // Skip the last item which was just added and will be included separately
+            const historyToInclude = this.history.slice(2, -1).slice(-20);
+            
+            for (const item of historyToInclude) {
+                contents.push({
+                    role: item.role === 'user' ? 'user' : 'model',
+                    parts: [{ text: item.content }]
+                });
+            }
+            
+            // Add current message with files
+            contents.push({
+                role: "user",
+                parts: currentParts
+            });
+            
             // Create request body for Gemini
             const requestBody = {
-                contents: [
-                    {
-                        parts: parts
-                    }
-                ],
+                contents: contents,
                 generationConfig: {
                     temperature: CONFIG.TEMPERATURE,
                     topK: CONFIG.TOP_K,
@@ -172,7 +239,7 @@ class GeminiAPI {
             // API endpoint
             const endpoint = `https://generativelanguage.googleapis.com/v1/models/${this.modelName}:generateContent?key=${this.apiKey}`;
             
-            console.log("Sending request with files to Gemini API...");
+            console.log("Sending request with files and history to Gemini API...");
             
             // Make the API call
             const response = await fetch(endpoint, {

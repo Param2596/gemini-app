@@ -545,15 +545,28 @@ class RetroTerminal {
         historyList.id = 'history-list';
         historyList.className = 'history-list';
         
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'history-buttons-container';
+        
         const newChatButton = document.createElement('button');
         newChatButton.id = 'new-chat-button';
         newChatButton.className = 'terminal-button';
         newChatButton.textContent = 'NEW CHAT';
         newChatButton.onclick = () => this.startNewChat();
         
+        // Add new "DELETE ALL" button
+        const deleteAllButton = document.createElement('button');
+        deleteAllButton.id = 'delete-all-button';
+        deleteAllButton.className = 'terminal-button delete-all';
+        deleteAllButton.textContent = 'DELETE ALL';
+        deleteAllButton.onclick = () => this.deleteAllChats();
+        
+        buttonsContainer.appendChild(newChatButton);
+        buttonsContainer.appendChild(deleteAllButton);
+        
         historyPanel.appendChild(historyHeader);
         historyPanel.appendChild(historyList);
-        historyPanel.appendChild(newChatButton);
+        historyPanel.appendChild(buttonsContainer);
         
         document.querySelector('#crt-container').appendChild(historyPanel);
         
@@ -641,24 +654,31 @@ class RetroTerminal {
         
         const timestamp = new Date().toISOString();
         
-        // Generate a unique ID for this chat
-        const chatId = Date.now().toString();
+        // If this is a new chat, generate a new ID
+        if (!this.currentConversationId) {
+            this.currentConversationId = Date.now().toString();
+        }
         
         const chat = {
-            id: chatId,
+            id: this.currentConversationId,
             title: chatTitle,
-            timestamp: timestamp,
+            timestamp: timestamp,  // Always update timestamp to current time
             messages: chatMessages
         };
         
-        // Add to saved chats
-        savedChats.push(chat);
+        // Check if this conversation already exists
+        const existingIndex = savedChats.findIndex(c => c.id === this.currentConversationId);
+        
+        if (existingIndex !== -1) {
+            // Replace existing chat
+            savedChats[existingIndex] = chat;
+        } else {
+            // Add new chat
+            savedChats.push(chat);
+        }
         
         // Store in localStorage
         localStorage.setItem('geminiChats', JSON.stringify(savedChats));
-        
-        // Update this.currentConversationId
-        this.currentConversationId = chatId;
     }
 
     // Load saved chats into history panel
@@ -738,6 +758,26 @@ class RetroTerminal {
         
         // Refresh the list
         this.loadSavedChats();
+    }
+
+    // Implement delete all chats functionality
+    deleteAllChats() {
+        // Ask for confirmation
+        const confirmation = confirm("WARNING: This will permanently delete ALL chat history. Continue?");
+        
+        if (confirmation) {
+            // Clear local storage
+            localStorage.removeItem('geminiChats');
+            
+            // Update status
+            document.getElementById('status-message').textContent = "ALL HISTORY DELETED";
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = "READY";
+            }, 2000);
+            
+            // Refresh the history list (which will show "No saved chats")
+            this.loadSavedChats();
+        }
     }
 
     // Update startNewChat to save current conversation first
