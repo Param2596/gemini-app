@@ -19,6 +19,20 @@ class GeminiAPI {
         this.history = [];
     }
 
+    async listAvailableModels() {
+        try {
+            const endpoint = `https://generativelanguage.googleapis.com/v1/models?key=${this.apiKey}`;
+            const response = await fetch(endpoint);
+            const data = await response.json();
+            console.log("Available models:", data);
+            return data;
+        } catch (error) {
+            console.error("Error listing models:", error);
+            throw error;
+        }
+    }
+    
+
     // Send message to Gemini API
     async sendMessage(message) {
         try {

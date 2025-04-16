@@ -8,16 +8,37 @@ class RetroTerminal {
         this.themeSelector = document.getElementById('theme-selector');
         this.bootSound = new Audio(CONFIG.BOOT_SOUND);
         this.isProcessing = false;
+        this.lastTypingCancellation = null;
+        this.currentConversationId = Date.now().toString();
         
         this.initializeEventListeners();
         this.initializeTerminal();
+        this.initializeHistory(); // Add this line to initialize history functionality
+        
+        // Auto-save chat when window is closed
+        window.addEventListener('beforeunload', () => {
+            this.saveCurrentChat();
+        });
+        
+        // Auto-save chat periodically
+        setInterval(() => this.saveCurrentChat(), 60000);
     }
 
     // Initialize event listeners
     initializeEventListeners() {
+        // Load saved theme if available
+        const savedTheme = localStorage.getItem('geminiTerminalTheme');
+        if (savedTheme) {
+            this.themeSelector.value = savedTheme;
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
         // Theme selector
         this.themeSelector.addEventListener('change', (e) => {
-            document.documentElement.setAttribute('data-theme', e.target.value);
+            const theme = e.target.value;
+            document.documentElement.setAttribute('data-theme', theme);
+            // Save theme preference to localStorage
+            localStorage.setItem('geminiTerminalTheme', theme);
         });
 
         // Send button
@@ -35,6 +56,23 @@ class RetroTerminal {
 
     // Initialize the terminal with boot sequence
     initializeTerminal() {
+        // First, save the existing content if there's any real conversation
+        if (this.chatOutput && this.chatOutput.querySelectorAll('.user-message').length > 0) {
+            this.saveCurrentChat();
+        }
+        
+        // Add NEW CHAT button to terminal header
+        const controlsDiv = document.querySelector('#terminal-controls');
+        
+        const newChatButton = document.createElement('button');
+        newChatButton.id = 'new-chat-button-header';
+        newChatButton.className = 'terminal-button';
+        newChatButton.textContent = 'NEW CHAT';
+        newChatButton.onclick = () => this.startNewChat();
+        
+        // Add it before the theme selector
+        controlsDiv.insertBefore(newChatButton, controlsDiv.firstChild);
+        
         // Create initial boot prompt
         const bootPrompt = document.createElement('div');
         bootPrompt.className = 'message bot-message';
@@ -66,7 +104,8 @@ class RetroTerminal {
         // Clear chat and show boot sequence
         this.chatOutput.innerHTML = '';
         
-        const steps = [
+        // CHANGE: Create a single combined boot message
+        const bootSteps = [
             "BIOS v3.2.1 - Initializing memory...",
             "Memory check: 640K OK",
             "Loading GEMINI/OS v2.5...",
@@ -79,24 +118,39 @@ class RetroTerminal {
             "GEMINI AI ready for interaction."
         ];
         
-        // Display boot sequence with delay
+        // Create a single message with all boot steps
+        const bootContent = bootSteps.join('\n');
+        
+        // Create boot message element directly (bypassing addMessage)
+        const bootMessageDiv = document.createElement('div');
+        bootMessageDiv.className = 'message bot-message boot-message';
+        bootMessageDiv.innerHTML = `<pre class="boot-text">${bootContent}</pre>`;
+        this.chatOutput.appendChild(bootMessageDiv);
+        
         let delay = 150;
-        steps.forEach((step, index) => {
-            setTimeout(() => {
-                this.addMessage('bot', step);
+        let currentStepIndex = 0;
+        
+        // Display boot sequence one step at a time
+        const bootInterval = setInterval(() => {
+            if (currentStepIndex < bootSteps.length) {
+                // Show up to the current step
+                bootMessageDiv.innerHTML = `<pre class="boot-text">${bootSteps.slice(0, currentStepIndex + 1).join('\n')}</pre>`;
+                currentStepIndex++;
+                this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
+            } else {
+                // Boot sequence complete
+                clearInterval(bootInterval);
                 
-                // If last step, add welcome message after another delay
-                if (index === steps.length - 1) {
-                    setTimeout(() => {
-                        this.addMessage('bot', "Hello! I'm GEMINI. How can I assist you today?");
-                        document.getElementById('user-input').disabled = false;
-                        document.getElementById('send-button').disabled = false;
-                        document.getElementById('status-message').textContent = "READY";
-                        document.getElementById('user-input').focus();
-                    }, delay);
-                }
-            }, delay * index);
-        });
+                // Add welcome message as a separate message
+                setTimeout(() => {
+                    this.addMessage('bot', "Hello! I'm GEMINI. How can I assist you today?");
+                    document.getElementById('user-input').disabled = false;
+                    document.getElementById('send-button').disabled = false;
+                    document.getElementById('status-message').textContent = "READY";
+                    document.getElementById('user-input').focus();
+                }, delay);
+            }
+        }, delay);
         
         // Disable input during boot sequence
         document.getElementById('user-input').disabled = true;
@@ -106,45 +160,93 @@ class RetroTerminal {
 
     // Add a message to the chat
     addMessage(type, content) {
+        // Remove the separator code from here (we'll add it after typing completes)
+        
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}-message`;
-        
+
         if (type === 'user') {
             messageDiv.textContent = `YOU: ${content}`;
+            this.chatOutput.appendChild(messageDiv);
+            this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
         } else if (type === 'error') {
             messageDiv.className = 'message error-message';
             messageDiv.textContent = `ERROR: ${content}`;
+            this.chatOutput.appendChild(messageDiv);
+            this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
         } else {
-            // For bot messages, convert newlines to <br> tags
-            // This gives us precise control over line breaks
-            let formattedText = content
-                // Replace consecutive newlines with single <br>
-                .replace(/\n\n+/g, '\n')
-                // Replace single newlines with <br>
-                .replace(/\n/g, '<br>')
-                // Handle code blocks
-                .replace(/```(\w+)?\s*([\s\S]*?)```/g, function(match, lang, code) {
-                    return `<pre><code>${code.trim()}</code></pre>`;
-                })
-                // Handle inline code
-                .replace(/`([^`]+)`/g, '<code>$1</code>')
-                // Handle bold text
-                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-                // Handle italic text
-                .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            // Bot message container
+            const messageContentDiv = document.createElement('div');
+            messageContentDiv.className = 'message-content';
+            
+            // Create separator (but don't add it yet)
+            const separator = document.createElement('div');
+            separator.className = 'message-separator';
+            
+            // Add message actions
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'message-actions';
+            
+            // Copy button
+            const copyButton = document.createElement('button');
+            copyButton.className = 'message-action-button';
+            copyButton.textContent = 'COPY';
+            copyButton.onclick = () => this.copyToClipboard(content);
+            
+            // Regenerate button
+            const regenerateButton = document.createElement('button');
+            regenerateButton.className = 'message-action-button';
+            regenerateButton.textContent = 'REGENERATE';
+            regenerateButton.onclick = () => this.regenerateResponse();
+            
+            // Add buttons to actions
+            actionsDiv.appendChild(copyButton);
+            actionsDiv.appendChild(regenerateButton);
+            
+            // Append content div to message
+            messageDiv.appendChild(messageContentDiv);
+            
+            // Add to chat
+            this.chatOutput.appendChild(messageDiv);
+            this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
+            
+            // Start typing animation and add separator + buttons when complete
+            this.typeText(messageContentDiv, content).then(() => {
+                // Don't add separator for boot/welcome messages
+                if (!content.includes('BIOS') && !content.includes('Terminal ready') && 
+                    !content.includes('Memory check') && !content.includes('Loading GEMINI') && 
+                    !content.includes('Initializing') && !content.includes('Network connection') &&
+                    !content.includes('GEMINI Kernel loaded.')&&
+                    !content.includes('Loading language modules') &&
+                    !content.includes('Loading creativity engines') &&
+                    !content.includes('Loading knowledge base') &&
+                    !content.includes('GEMINI AI ready') &&
+                    !content.includes('GEMINI/OS') &&
+                    !content.includes("Hello! I'm GEMINI")) {
+                    
+                    // Add separator after content is typed and before action buttons
+                    messageDiv.appendChild(separator);
+                }
                 
-            messageDiv.innerHTML = formattedText;
+                // Add action buttons after separator
+                messageDiv.appendChild(actionsDiv);
+                
+                // Scroll to ensure everything is visible
+                this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
+            });
         }
-        
-        this.chatOutput.appendChild(messageDiv);
-        this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
     }
 
-    // Simple markdown rendering
+    // Replace your current renderMarkdown method
+
     renderMarkdown(text) {
+        // Handle tables - must process these first
+        text = this.processMarkdownTables(text);
+        
         // Handle code blocks with language specification
         text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
-            return `<pre><code>${this.escapeHtml(code.trim())}</code></pre>`;
+            const lang = language ? ` data-language="${language}"` : '';
+            return `<pre${lang}><code>${this.escapeHtml(code.trim())}</code></pre>`;
         });
         
         // Handle inline code
@@ -156,21 +258,74 @@ class RetroTerminal {
         // Handle italic text
         text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
         
-        // Handle lists (simple)
-        text = text.replace(/^\s*-\s+(.+)$/gm, '<li>$1</li>');
-        text = text.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+        // Handle lists (better handling)
+        // Unordered lists
+        text = text.replace(/(?:^|\n)(\s*)-\s+(.+)(?:\n|$)/g, (match, indent, content) => {
+            return `\n${indent}<li>${content}</li>\n`;
+        });
+        
+        // Ordered lists
+        text = text.replace(/(?:^|\n)(\s*)\d+\.\s+(.+)(?:\n|$)/g, (match, indent, content) => {
+            return `\n${indent}<li class="ordered">${content}</li>\n`;
+        });
+        
+        // Wrap consecutive list items in ul/ol tags
+        text = text.replace(/(<li(?:\s+class="ordered")?>.*?<\/li>\n)+/gs, (match) => {
+            if (match.includes('class="ordered"')) {
+                return `<ol>${match}</ol>`;
+            }
+            return `<ul>${match}</ul>`;
+        });
         
         // Handle headers
         text = text.replace(/^### (.*$)/gm, '<h3>$1</h3>');
         text = text.replace(/^## (.*$)/gm, '<h2>$1</h2>');
         text = text.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+        
+        // Handle horizontal rules
+        text = text.replace(/^\s*---\s*$/gm, '<hr>');
+        
+        // Handle links
+        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        
+        // Handle Images: ![alt](url)
+        text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
+            // Basic security check for common protocols
+            if (url.startsWith('http:') || url.startsWith('https:') || url.startsWith('data:image')) {
+                return `<img src="${this.escapeHtml(url)}" alt="${this.escapeHtml(alt)}" class="rendered-image">`;
+            }
+            return `[Image: ${this.escapeHtml(alt)} - Invalid URL]`; // Handle potentially unsafe URLs
+        });
 
-        // Handle paragraphs
-        text = text.replace(/\n\s*\n/g, '\n<br><br>\n');
+        // Handle paragraphs better
+        text = text.replace(/\n\s*\n/g, '\n<br>\n');
         
         return text;
     }
-    
+
+    // Process markdown tables
+    processMarkdownTables(text) {
+        const tableRegex = /\n((\|[^\n]+\|\n)((?:\|[-:\s]+)+\|\n)((?:\|[^\n]+\|\n)+))/g;
+        
+        return text.replace(tableRegex, (match, table) => {
+            // Split table into rows
+            const rows = table.trim().split('\n');
+            
+            // Process header row
+            const headerRow = rows[0];
+            const headerCells = headerRow.split('|').slice(1, -1);
+            const header = `<tr>${headerCells.map(cell => `<th>${cell.trim()}</th>`).join('')}</tr>`;
+            
+            const body = bodyRows.map(row => {
+                const cells = row.split('|').slice(1, -1);
+                return `<tr>${cells.map(cell => `<td>${cell.trim()}</td>`).join('')}</tr>`;
+            }).join('');
+            
+            // Assemble the table
+            return `\n<div class="table-container"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>\n`;
+        });
+    }
+
     // Escape HTML to prevent XSS
     escapeHtml(unsafe) {
         return unsafe
@@ -222,5 +377,352 @@ class RetroTerminal {
     updateClock() {
         const now = new Date();
         document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', {hour12: false});
+    }
+
+    // Update typeText to return a promise that resolves when typing is complete
+    typeText(element, text, speed = 10, chunkDelay = 200) {
+        return new Promise(resolve => {
+            // Split by double newlines (paragraphs) or single newlines (lines)
+            const chunks = text.split(/\n{2,}/g);
+            let current = 0;
+
+            const typeChunk = () => {
+                if (current < chunks.length) {
+                    // Render markdown for this chunk and append
+                    const chunkHtml = this.renderMarkdown(chunks[current]);
+                    // Append, not replace, to preserve previous content
+                    element.innerHTML += (current > 0 ? "<br><br>" : "") + chunkHtml;
+                    element.parentElement.scrollTop = element.parentElement.scrollHeight;
+                    current++;
+                    setTimeout(typeChunk, chunkDelay);
+                } else {
+                    // All chunks have been typed, resolve the promise
+                    resolve();
+                }
+            };
+            typeChunk();
+        });
+    }
+
+    // Utility method to copy text to clipboard
+    copyToClipboard(text) {
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                document.getElementById('status-message').textContent = "COPIED TO CLIPBOARD";
+                setTimeout(() => {
+                    document.getElementById('status-message').textContent = "READY";
+                }, 2000);
+            })
+            .catch(err => {
+                console.error('Failed to copy: ', err);
+                document.getElementById('status-message').textContent = "COPY FAILED";
+            });
+    }
+
+    // Regenerate the last response
+    regenerateResponse() {
+        // Get last user message to resend
+        const lastUserMessage = this.getLastUserMessage();
+        if (lastUserMessage) {
+            // Remove the last bot message
+            const messages = this.chatOutput.querySelectorAll('.bot-message');
+            if (messages.length > 0) {
+                const lastBotMessage = messages[messages.length - 1];
+                this.chatOutput.removeChild(lastBotMessage);
+            }
+            
+            // Resend the query
+            this.resendMessage(lastUserMessage);
+        }
+    }
+
+    // Get the last user message
+    getLastUserMessage() {
+        const userMessages = this.chatOutput.querySelectorAll('.user-message');
+        if (userMessages.length > 0) {
+            const lastMessage = userMessages[userMessages.length - 1];
+            return lastMessage.textContent.replace('YOU: ', '');
+        }
+        return null;
+    }
+
+    // Resend a message to the API
+    async resendMessage(message) {
+        // Set processing state
+        this.isProcessing = true;
+        this.sendButton.disabled = true;
+        document.getElementById('status-message').textContent = "PROCESSING";
+        document.getElementById('status-message').classList.add('loading');
+        
+        try {
+            // Send to Gemini API
+            const response = await window.geminiAPI.sendMessage(message);
+            
+            // Add response to chat
+            this.addMessage('bot', response);
+        } catch (error) {
+            console.error('Error sending message:', error);
+            this.addMessage('error', 'Failed to get response. Check the console for details.');
+        } finally {
+            // Reset processing state
+            this.isProcessing = false;
+            this.sendButton.disabled = false;
+            document.getElementById('status-message').textContent = "READY";
+            document.getElementById('status-message').classList.remove('loading');
+            this.userInput.focus();
+        }
+    }
+
+    // Initialize chat history functionality
+    initializeHistory() {
+        // Add a history button to the header
+        const controlsDiv = document.querySelector('#terminal-controls');
+        
+        const historyButton = document.createElement('button');
+        historyButton.id = 'history-button';
+        historyButton.className = 'terminal-button';
+        historyButton.textContent = 'HISTORY';
+        historyButton.onclick = () => this.toggleHistoryPanel();
+        
+        controlsDiv.appendChild(historyButton);
+        
+        // Create history panel (hidden initially)
+        const historyPanel = document.createElement('div');
+        historyPanel.id = 'history-panel';
+        historyPanel.className = 'history-panel';
+        historyPanel.style.display = 'none';
+        
+        const historyHeader = document.createElement('div');
+        historyHeader.className = 'history-header';
+        historyHeader.innerHTML = '<span>CHAT HISTORY</span><button id="close-history">X</button>';
+        
+        const historyList = document.createElement('div');
+        historyList.id = 'history-list';
+        historyList.className = 'history-list';
+        
+        const newChatButton = document.createElement('button');
+        newChatButton.id = 'new-chat-button';
+        newChatButton.className = 'terminal-button';
+        newChatButton.textContent = 'NEW CHAT';
+        newChatButton.onclick = () => this.startNewChat();
+        
+        historyPanel.appendChild(historyHeader);
+        historyPanel.appendChild(historyList);
+        historyPanel.appendChild(newChatButton);
+        
+        document.querySelector('#crt-container').appendChild(historyPanel);
+        
+        // Add close button listener
+        document.querySelector('#close-history').addEventListener('click', () => {
+            document.querySelector('#history-panel').style.display = 'none';
+        });
+        
+        // Load saved chats
+        this.loadSavedChats();
+    }
+
+    // Toggle history panel visibility
+    toggleHistoryPanel() {
+        const panel = document.querySelector('#history-panel');
+        if (panel.style.display === 'none') {
+            panel.style.display = 'flex';
+            this.loadSavedChats(); // Refresh the list when opening
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+
+    // Update saveCurrentChat to filter out boot/welcome messages
+
+    saveCurrentChat() {
+        // Only save if we have messages
+        if (this.chatOutput.querySelectorAll('.message').length < 3) return; // Ignore boot messages
+        
+        const savedChats = JSON.parse(localStorage.getItem('geminiChats') || '[]');
+        
+        // Create a chat object
+        const chatMessages = [];
+        const messages = this.chatOutput.querySelectorAll('.message');
+        
+        let foundRealConversation = false;
+        
+        messages.forEach(msg => {
+            // Skip boot messages entirely
+            if (msg.classList.contains('boot-message')) {
+                return;
+            }
+            
+            if (msg.classList.contains('user-message')) {
+                // This is a user message - add it and mark that we've started the real conversation
+                foundRealConversation = true;
+                chatMessages.push({
+                    role: 'user',
+                    content: msg.textContent.replace('YOU: ', '')
+                });
+            } else if (msg.classList.contains('bot-message')) {
+                const content = msg.querySelector('.message-content')?.textContent || msg.textContent;
+                
+                // Skip welcome message
+                if (content.includes("Hello! I'm GEMINI") || 
+                    content.includes("Terminal online") || 
+                    content.includes("Awaiting input")) {
+                    return;
+                }
+                
+                // If we already found a real user message, or this is a substantive bot response
+                // that isn't just the welcome message, include it
+                if (foundRealConversation) {
+                    chatMessages.push({
+                        role: 'bot',
+                        content: content
+                    });
+                }
+            }
+        });
+        
+        // Only save if we have actual conversation messages (at least one user message)
+        if (chatMessages.length < 1) return;
+        
+        // Use first user message as title, or first few words if very long
+        let chatTitle = "New Chat";
+        for (const msg of chatMessages) {
+            if (msg.role === 'user') {
+                chatTitle = msg.content.length > 30 ? 
+                    msg.content.substring(0, 30) + '...' : 
+                    msg.content;
+                break;
+            }
+        }
+        
+        const timestamp = new Date().toISOString();
+        
+        // Generate a unique ID for this chat
+        const chatId = Date.now().toString();
+        
+        const chat = {
+            id: chatId,
+            title: chatTitle,
+            timestamp: timestamp,
+            messages: chatMessages
+        };
+        
+        // Add to saved chats
+        savedChats.push(chat);
+        
+        // Store in localStorage
+        localStorage.setItem('geminiChats', JSON.stringify(savedChats));
+        
+        // Update this.currentConversationId
+        this.currentConversationId = chatId;
+    }
+
+    // Load saved chats into history panel
+    loadSavedChats() {
+        const historyList = document.querySelector('#history-list');
+        historyList.innerHTML = ''; // Clear current list
+        
+        const savedChats = JSON.parse(localStorage.getItem('geminiChats') || '[]');
+        
+        if (savedChats.length === 0) {
+            historyList.innerHTML = '<div class="no-history">No saved chats</div>';
+            return;
+        }
+        
+        // Sort by timestamp (newest first)
+        savedChats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        // Create chat items
+        savedChats.forEach(chat => {
+            const chatItem = document.createElement('div');
+            chatItem.className = 'history-item';
+            
+            const chatDate = new Date(chat.timestamp).toLocaleString();
+            
+            chatItem.innerHTML = `
+                <div class="history-item-title">${chat.title}</div>
+                <div class="history-item-date">${chatDate}</div>
+                <div class="history-item-actions">
+                    <button class="history-load" data-id="${chat.id}">LOAD</button>
+                    <button class="history-delete" data-id="${chat.id}">DELETE</button>
+                </div>
+            `;
+            
+            historyList.appendChild(chatItem);
+        });
+        
+        // Add event listeners
+        document.querySelectorAll('.history-load').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const chatId = e.target.getAttribute('data-id');
+                this.loadChat(chatId);
+            });
+        });
+        
+        document.querySelectorAll('.history-delete').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const chatId = e.target.getAttribute('data-id');
+                this.deleteChat(chatId);
+            });
+        });
+    }
+
+    // Load a specific chat
+    loadChat(chatId) {
+        const savedChats = JSON.parse(localStorage.getItem('geminiChats') || '[]');
+        const chat = savedChats.find(c => c.id === chatId);
+        
+        if (!chat) return;
+        
+        // Clear current chat
+        this.chatOutput.innerHTML = '';
+        
+        // Load messages
+        chat.messages.forEach(msg => {
+            this.addMessage(msg.role, msg.content);
+        });
+        
+        // Close history panel
+        document.querySelector('#history-panel').style.display = 'none';
+    }
+
+    // Delete a saved chat
+    deleteChat(chatId) {
+        let savedChats = JSON.parse(localStorage.getItem('geminiChats') || '[]');
+        savedChats = savedChats.filter(chat => chat.id !== chatId);
+        localStorage.setItem('geminiChats', JSON.stringify(savedChats));
+        
+        // Refresh the list
+        this.loadSavedChats();
+    }
+
+    // Update startNewChat to save current conversation first
+
+    startNewChat() {
+        // Save current chat before starting new one
+        this.saveCurrentChat();
+        
+        // Clear conversation history in the API object
+        if (window.geminiAPI) {
+            window.geminiAPI.clearHistory();
+        }
+        
+        // Generate new conversation ID
+        this.currentConversationId = Date.now().toString();
+        
+        // Clear chat
+        this.chatOutput.innerHTML = '';
+        
+        // Add welcome message
+        this.addMessage('bot', "Hello! I'm GEMINI. How can I assist you today?");
+        
+        // Reset input field
+        this.userInput.value = '';
+        this.userInput.focus();
+        
+        // Close history panel if open
+        const historyPanel = document.querySelector('#history-panel');
+        if (historyPanel && historyPanel.style.display !== 'none') {
+            historyPanel.style.display = 'none';
+        }
     }
 }

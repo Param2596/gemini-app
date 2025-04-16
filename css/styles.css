@@ -1,12 +1,45 @@
-/* CRT Monitor Effect Variables */
+/* Enhance text clarity while keeping retro feel */
+
+/* Adjust the base font settings for better readability */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    color: var(--text-color);
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 18px; /* Slightly larger font size */
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.5px; /* Add slight spacing between letters */
+    overflow: hidden;
+}
+
+/* Optimize the text shadow for better clarity */
+.message {
+    margin-bottom: 8px;
+    text-shadow: 0 0 4px var(--glow-color);
+    /* Reduce flicker effect for better readability */
+    animation: textFlicker 0.5s infinite alternate;
+    animation-play-state: paused; 
+}
+
+/* Adjust text line height for better reading */
+.bot-message {
+    display: block;
+    line-height: 1.15; /* Slightly increased for readability but still compact */
+}
+
+/* Improve contrast and readability without losing retro feel */
 :root {
-    /* Default Theme: Amber */
-    --background-color: #1a1a1a; 
-    --text-color: #FFB000; 
-    --input-bg: #2a2a2a;
+    /* Default Theme: Amber - increased contrast */
+    --background-color: #111111; 
+    --text-color: #FFB30F; /* Slightly brighter amber */
+    --input-bg: #1F1F1F;
     --border-color: #444;
-    --glow-color: rgba(255, 176, 0, 0.3);
-    --scan-line-color: rgba(0, 0, 0, 0.2);
+    --glow-color: rgba(255, 179, 15, 0.3);
+    --scan-line-color: rgba(0, 0, 0, 0.15);
 }
 
 /* Green Theme */
@@ -33,6 +66,41 @@
     --glow-color: rgba(255, 85, 85, 0.3);
 }
 
+/* Optimize CRT scan lines - make them more subtle */
+#crt-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        var(--scan-line-color) 50%
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0; /* More subtle scan lines */
+}
+
+/* Refine the CRT edge glow for better text clarity */
+#crt-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* box-shadow: 
+        inset 0 0 100px rgba(0, 0, 0, 0.8),
+        inset 0 0 35px var(--glow-color); */
+    box-shadow: none;
+    pointer-events: none;
+    z-index: 2;
+    border-radius: 2px;
+}
+
 html, body {
     height: 100%;
     margin: 0;
@@ -40,7 +108,11 @@ html, body {
     background-color: black;
     color: var(--text-color);
     font-family: 'VT323', 'Courier New', monospace;
-    font-size: 16px;
+    font-size: 18px; /* Slightly larger font size */
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: 0.5px; /* Add slight spacing between letters */
     overflow: hidden;
 }
 
@@ -49,6 +121,7 @@ html, body {
     font-family: 'VT323';
     font-style: normal;
     font-weight: 400;
+    font-display: swap; /* Improves font loading behavior */
     src: url(https://fonts.gstatic.com/s/vt323/v17/pxiKyp0ihIEF2isfFJU.woff2) format('woff2');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
@@ -84,7 +157,7 @@ html, body {
     background-size: 100% 4px;
     pointer-events: none;
     z-index: 10;
-    opacity: 0.15;
+    opacity: 0.08; /* More subtle scan lines */
 }
 
 /* CRT Edge Glow */
@@ -96,11 +169,11 @@ html, body {
     width: 100%;
     height: 100%;
     box-shadow: 
-        inset 0 0 10px rgba(0, 0, 0, 0.9),
-        inset 0 0 4px var(--glow-color);
+        inset 0 0 100px rgba(0, 0, 0, 0.8),
+        inset 0 0 35px var(--glow-color);
     pointer-events: none;
     z-index: 2;
-    border-radius: 5px;
+    border-radius: 20px;
 }
 
 /* Header Bar */
@@ -120,10 +193,11 @@ html, body {
     text-transform: uppercase;
 }
 
+/* Update terminal controls to accommodate buttons */
 #terminal-controls {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 
 #theme-selector {
@@ -227,9 +301,10 @@ html, body {
 /* Make the message text more compact */
 .message {
     margin-bottom: 8px;
-    text-shadow: 0 0 5px var(--glow-color);
-    animation: textFlicker 0.3s infinite alternate;
-    animation-play-state: paused;
+    text-shadow: 0 0 4px var(--glow-color);
+    /* Reduce flicker effect for better readability */
+    animation: textFlicker 0.5s infinite alternate;
+    animation-play-state: paused; 
 }
 
 .message:hover {
@@ -245,11 +320,12 @@ html, body {
 .user-message {
     border-left: 2px solid var(--text-color);
     padding-left: 10px;
+    opacity: 0.9; /* Slightly dim user messages compared to bot responses */
 }
 
 .bot-message {
     white-space: pre-wrap;
-    line-height: 1.2; /* Reduce from 1.5 to make text more compact */
+    line-height: 1.15; /* Slightly increased for readability but still compact */
 }
 
 .bot-message p {
@@ -266,7 +342,9 @@ html, body {
 /* Ensure proper spacing for code blocks while keeping other elements tight */
 .bot-message pre {
     margin: 4px 0;
-    padding: 8px;
+    padding: 6px;
+    background-color: rgba(30, 30, 30, 0.7);
+    border: 1px solid var(--border-color);
 }
 
 /* Compact lists */
@@ -299,17 +377,17 @@ html, body {
 }
 
 .bot-message code {
-    background-color: var(--input-bg);
-    padding: 2px 4px;
-    border-radius: 0;
+    background-color: rgba(30, 30, 30, 0.7);
+    padding: 0 3px;
+    border: none;
+    font-weight: bold; /* Make code stand out */
     font-family: 'VT323', 'Courier New', monospace;
-    border: 1px solid var(--border-color);
 }
 
 .bot-message pre {
-    background-color: var(--input-bg);
-    padding: 15px;
-    margin: 10px 0;
+    background-color: rgba(30, 30, 30, 0.7);
+    padding: 6px;
+    margin: 4px 0;
     border-radius: 0;
     overflow-x: auto;
     border: 1px solid var(--border-color);
@@ -319,6 +397,45 @@ html, body {
     background-color: transparent;
     padding: 0;
     border: none;
+}
+
+/* Basic Syntax Highlighting for Code Blocks */
+
+/* Default code style */
+.bot-message pre code {
+    color: var(--text-color); /* Default code color */
+    background-color: transparent;
+    padding: 0;
+    border: none;
+    font-weight: normal; /* Reset bold for general code */
+}
+
+/* Keywords (example for JavaScript) */
+pre[data-language="javascript"] code .keyword,
+pre[data-language="js"] code .keyword {
+    color: #5599FF; /* Blue for keywords */
+    font-weight: bold;
+}
+
+/* Strings (example) */
+pre code .string {
+    color: #33FF33; /* Green for strings */
+}
+
+/* Comments (example) */
+pre code .comment {
+    color: #888888; /* Grey for comments */
+    font-style: italic;
+}
+
+/* Numbers (example) */
+pre code .number {
+    color: #FFB30F; /* Amber for numbers */
+}
+
+/* Function names (example) */
+pre code .function {
+    color: #FF5555; /* Red for functions */
 }
 
 .error-message {
@@ -438,4 +555,279 @@ html, body {
         opacity: 1;
         filter: brightness(1) blur(0);
     }
+}
+
+/* Adding styles for modern features */
+
+/* Typing cursor animation */
+.typing-cursor {
+    display: inline-block;
+    vertical-align: middle;
+    animation: cursor-blink 1s step-end infinite;
+    margin-left: 2px;
+}
+
+@keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Code block container with copy button */
+.code-block-container {
+    position: relative;
+    margin: 8px 0;
+}
+
+.copy-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 3px 8px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    z-index: 5;
+}
+
+.copy-button:hover {
+    opacity: 1;
+    background-color: var(--text-color);
+    color: var(--background-color);
+}
+
+/* Table styling */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 10px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border-color);
+}
+
+th, td {
+    border: 1px solid var(--border-color);
+    padding: 6px 10px;
+    text-align: left;
+}
+
+th {
+    background-color: var(--input-bg);
+    font-weight: bold;
+}
+
+/* Message actions */
+.message-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 5px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.bot-message:hover .message-actions {
+    opacity: 1;
+}
+
+.message-action-button {
+    background-color: transparent;
+    color: var(--text-color);
+    border: none;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 2px 8px;
+    margin-left: 8px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.message-action-button:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+/* Loading indicator animation */
+#status-message.loading {
+    position: relative;
+    animation: loading-dots 1.5s infinite;
+}
+
+@keyframes loading-dots {
+    0% { content: "PROCESSING"; }
+    33% { content: "PROCESSING."; }
+    66% { content: "PROCESSING.."; }
+    100% { content: "PROCESSING..."; }
+}
+
+/* History panel styles */
+
+.terminal-button {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.terminal-button:hover {
+    background-color: var(--text-color);
+    color: var(--background-color);
+}
+
+.history-panel {
+    position: absolute;
+    top: 50px;
+    right: 20px;
+    width: 300px;
+    max-height: 80%;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.history-header button {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.history-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.history-item {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.history-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.history-item-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.history-item-date {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-bottom: 5px;
+}
+
+.history-item-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+}
+
+.history-item-actions button {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 2px 8px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.history-item-actions button:hover {
+    background-color: var(--text-color);
+    color: var(--background-color);
+}
+
+#new-chat-button {
+    margin: 10px;
+    align-self: center;
+}
+
+.no-history {
+    padding: 20px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+/* Message separator styling */
+.message-separator {
+    height: 1px;
+    background: linear-gradient(
+        to right,
+        transparent,
+        var(--text-color) 20%,
+        var(--text-color) 80%,
+        transparent
+    );
+    opacity: 0.5;
+    margin: 20px 10%;
+    width: 80%;
+    color: white
+}
+
+/* Add styles for rendered images */
+.rendered-image {
+    max-width: 80%; /* Limit image size */
+    height: auto;
+    display: block; /* Ensure it's on its own line */
+    margin: 10px 0; /* Add some spacing */
+    border: 1px solid var(--border-color); /* Optional border */
+}
+
+/* Boot sequence styling */
+.boot-message {
+    padding-bottom: 10px;
+}
+
+.boot-text {
+    font-family: 'VT323', 'Courier New', monospace;
+    margin: 0;
+    padding: 0;
+    white-space: pre;
+    line-height: 1.3;
+    background: none;
+    border: none;
+    color: inherit;
+}
+
+/* Style for header buttons */
+#new-chat-button-header, #history-button {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    margin-right: 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#new-chat-button-header:hover, #history-button:hover {
+    background-color: var(--text-color);
+    color: var(--background-color);
 }
