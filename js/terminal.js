@@ -115,8 +115,25 @@ class RetroTerminal {
             messageDiv.className = 'message error-message';
             messageDiv.textContent = `ERROR: ${content}`;
         } else {
-            // For bot messages, render markdown
-            messageDiv.innerHTML = this.renderMarkdown(content);
+            // For bot messages, convert newlines to <br> tags
+            // This gives us precise control over line breaks
+            let formattedText = content
+                // Replace consecutive newlines with single <br>
+                .replace(/\n\n+/g, '\n')
+                // Replace single newlines with <br>
+                .replace(/\n/g, '<br>')
+                // Handle code blocks
+                .replace(/```(\w+)?\s*([\s\S]*?)```/g, function(match, lang, code) {
+                    return `<pre><code>${code.trim()}</code></pre>`;
+                })
+                // Handle inline code
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                // Handle bold text
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                // Handle italic text
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+                
+            messageDiv.innerHTML = formattedText;
         }
         
         this.chatOutput.appendChild(messageDiv);

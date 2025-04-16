@@ -96,11 +96,11 @@ html, body {
     width: 100%;
     height: 100%;
     box-shadow: 
-        inset 0 0 100px rgba(0, 0, 0, 0.9),
-        inset 0 0 40px var(--glow-color);
+        inset 0 0 10px rgba(0, 0, 0, 0.9),
+        inset 0 0 4px var(--glow-color);
     pointer-events: none;
     z-index: 2;
-    border-radius: 20px;
+    border-radius: 5px;
 }
 
 /* Header Bar */
@@ -205,8 +205,28 @@ html, body {
     border: 2px solid var(--input-bg);
 }
 
+/* Fix spacing in bot messages */
+.bot-message {
+    white-space: pre-wrap;
+    line-height: 1; /* Reduce line height to minimum */
+    margin-bottom: 8px;
+}
+
+/* Remove extra margins from paragraphs */
+.bot-message p {
+    margin: 0;
+    padding: 0;
+}
+
+/* Eliminate extra space between elements */
+.bot-message * {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Make the message text more compact */
 .message {
-    margin-bottom: 15px;
+    margin-bottom: 8px;
     text-shadow: 0 0 5px var(--glow-color);
     animation: textFlicker 0.3s infinite alternate;
     animation-play-state: paused;
@@ -229,6 +249,34 @@ html, body {
 
 .bot-message {
     white-space: pre-wrap;
+    line-height: 1.2; /* Reduce from 1.5 to make text more compact */
+}
+
+.bot-message p {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+
+.bot-message br + br {
+    content: "";
+    display: block;
+    margin-top: 0.5em;
+}
+
+/* Ensure proper spacing for code blocks while keeping other elements tight */
+.bot-message pre {
+    margin: 4px 0;
+    padding: 8px;
+}
+
+/* Compact lists */
+.bot-message ul, .bot-message ol {
+    margin: 2px 0 2px 20px;
+    padding: 0;
+}
+
+.bot-message li {
+    margin-bottom: 2px;
 }
 
 /* Style basic markdown HTML */
