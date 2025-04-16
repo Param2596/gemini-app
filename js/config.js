@@ -2,7 +2,7 @@
 
 // Replace with your actual Gemini API key
 const CONFIG = {
-    API_KEY: "AIzaSyDThBfNTVqpKTjRM62Wcf9FnMzchj3fUqA", // Replace this with your actual API key
+    API_KEY: "", // Replace this with your actual API key
     MODEL: "gemini-2.0-flash", // Changed to a proper model name
     MAX_TOKENS: 2048,
     TEMPERATURE: 0.7,
