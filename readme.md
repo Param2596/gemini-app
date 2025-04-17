@@ -31,31 +31,29 @@ Explore the live experience: [Gemini Retro Terminal](https://gemini-app-lake.ver
 ### Local Development
 
 1. Clone the repository:
+   ```bash
+   git clone <your-repo-url>
+   cd gemini-app
+   ```
 
-    ```bash
-    git clone <your-repo-url>
-    cd gemini-app
-    ```
+2. Install dependencies for local development server:
+   ```bash
+   npm install express dotenv cors
+   ```
 
-2. Set up your environment variables:
+3. Create a `.env` file in the project root and add your Gemini API key:
+   ```
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
 
-    Create a `.env.local` file in the root directory and add your Gemini API key:
+4. Start the local development server:
+   ```bash
+   node local-server.js
+   ```
 
-    ```env
-    GEMINI_API_KEY=your_gemini_api_key_here
-    ```
+5. Access the app at `http://localhost:3000`
 
-3. Serve the app locally using a simple HTTP server:
 
-    ```bash
-    npx serve
-    ```
-
-4. Open your browser and navigate to:
-
-    ```
-    http://localhost:3000
-    ```
 
 ## Configuration
 
