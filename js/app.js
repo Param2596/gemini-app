@@ -15,12 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Get API key from environment or a secure endpoint
     fetch('/api/getKey')
         .then(response => {
+            console.log("API response status:", response.status);
             if (!response.ok) {
                 throw new Error(`API key fetch failed: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
+            console.log("API response received:", data);
             if (!data.apiKey) {
                 throw new Error("No API key returned from server");
             }
