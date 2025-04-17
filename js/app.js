@@ -10,14 +10,25 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock(); // Update immediately on load
 
-// Initialize terminal when document is loaded
+// Add after initial clock setup
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize the terminal
-    const terminal = new RetroTerminal();
-    
-    // Update memory usage stats randomly to simulate activity
-    setInterval(() => {
-        const memUsage = 640 + Math.floor(Math.random() * 24);
-        document.getElementById('memory-usage').textContent = `MEM: ${memUsage}K`;
-    }, 5000);
+    // Get API key from environment or a secure endpoint
+    fetch('/api/getKey')
+        .then(response => response.json())
+        .then(data => {
+            CONFIG.API_KEY = data.apiKey;
+            console.log("API key loaded securely");
+            
+            // Initialize the terminal
+            const terminal = new RetroTerminal();
+            
+            // Update memory usage stats randomly to simulate activity
+            setInterval(() => {
+                const memUsage = 640 + Math.floor(Math.random() * 24);
+                document.getElementById('memory-usage').textContent = `MEM: ${memUsage}K`;
+            }, 5000);
+        })
+        .catch(error => {
+            console.error("Failed to load API key:", error);
+        });
 });
