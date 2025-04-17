@@ -20,8 +20,6 @@ Explore the live experience: [Gemini Retro Terminal](https://gemini-app-lake.ver
 - 📱 Fully responsive design for mobile and desktop
 - ⚙️ Customizable system prompts to define Gemini's personality
 
-
-
 ## Getting Started
 
 ### Prerequisites
@@ -58,29 +56,6 @@ Explore the live experience: [Gemini Retro Terminal](https://gemini-app-lake.ver
     ```
     http://localhost:3000
     ```
-
-
-## Deployment on Vercel
-
-1. Fork or clone this repository to your GitHub account  
-2. Sign up at [Vercel](https://vercel.com) if you don’t already have an account  
-3. Connect your GitHub repo to Vercel:
-
-    - In the Vercel dashboard, click **"Add New" > "Project"**
-    - Select your forked repo
-    - Add the necessary environment variables when prompted
-
-4. Add your Gemini API key as an environment variable:
-
-    ```
-    GEMINI_API_KEY=your_gemini_api_key_here
-    ```
-
-5. Deploy:
-
-    - Vercel will automatically build and deploy your app
-    - You'll receive a unique live URL
-
 
 ## Configuration
 
