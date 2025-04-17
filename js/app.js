@@ -24,8 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!data.apiKey) {
                 throw new Error("No API key returned from server");
             }
+            // Store API key and initialize GeminiAPI
             CONFIG.API_KEY = data.apiKey;
-            console.log("API key loaded securely");
+            
+            // Initialize the API with the key
+            window.initGeminiAPI(data.apiKey);
+            
+            console.log("API key loaded securely and API initialized");
             
             // Initialize the terminal
             const terminal = new RetroTerminal();

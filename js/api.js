@@ -282,8 +282,12 @@ class GeminiAPI {
     }
 }
 
-// Initialize API client
-const geminiAPI = new GeminiAPI(CONFIG.API_KEY, CONFIG.MODEL);
-// Make it globally available
-window.geminiAPI = geminiAPI;
-console.log("GeminiAPI object created and assigned to window.geminiAPI");
+// Don't initialize right away - we'll do this after fetching the API key
+console.log("GeminiAPI class ready, waiting for API key");
+
+// Export a function to initialize the API with a key
+window.initGeminiAPI = function(apiKey) {
+  window.geminiAPI = new GeminiAPI(apiKey, CONFIG.MODEL);
+  console.log("GeminiAPI initialized with API key");
+  return window.geminiAPI;
+}

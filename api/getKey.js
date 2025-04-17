@@ -10,5 +10,10 @@ export default function handler(req, res) {
   }
   
   // Return the API key from environment variable
-  res.status(200).json({ apiKey: process.env.GEMINI_API_KEY });
+  if (!process.env.GEMINI_API_KEY) {
+    console.error("GEMINI_API_KEY not set in environment");
+    return res.status(500).json({ error: "API key not configured" });
+  }
+  
+  return res.status(200).json({ apiKey: process.env.GEMINI_API_KEY });
 }
