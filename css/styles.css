@@ -930,3 +930,164 @@ th {
 .history-buttons-container .terminal-button {
     width: 48%;
 }
+
+/* Mobile-first responsive design enhancements */
+@media screen and (max-width: 768px) {
+  html, body {
+    font-size: 16px; /* Smaller base font size on mobile */
+  }
+  
+  #terminal-header {
+    padding: 8px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  #terminal-controls {
+    margin-top: 8px;
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  #terminal-title {
+    font-size: 16px;
+  }
+  
+  .theme-selector {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+  
+  #chat-output {
+    padding: 10px 15px;
+  }
+  
+  #input-area {
+    padding: 10px;
+    flex-direction: column;
+  }
+  
+  #user-input {
+    margin-right: 0;
+    margin-bottom: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  #send-button {
+    width: 100%;
+    padding: 8px;
+  }
+  
+  /* Fix action buttons spacing on mobile */
+  .message-actions {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  
+  /* Fix history panel positioning for mobile */
+  .history-panel {
+    width: 90%;
+    right: 5%;
+    left: 5%;
+  }
+  
+  /* Make file upload more mobile-friendly */
+  #file-upload-container {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    z-index: 5;
+  }
+  
+  /* Adjust file preview container position */
+  #file-preview-container {
+    width: calc(100% - 20px);
+    left: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+}
+
+/* Tablet-specific adjustments */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  html, body {
+    font-size: 18px;
+  }
+}
+
+/* Fix input area layout for mobile */
+@media screen and (max-width: 768px) {
+  #input-area {
+    display: grid;
+    grid-template-areas:
+      "input input"
+      "upload send";
+    grid-template-columns: auto 1fr;
+    grid-gap: 10px;
+    padding: 10px;
+  }
+  
+  #user-input {
+    grid-area: input;
+    margin: 0 0 10px 0;
+  }
+  
+  #file-upload-container {
+    grid-area: upload;
+    position: relative;
+    margin: 0;
+  }
+  
+  #send-button {
+    grid-area: send;
+    margin: 0;
+  }
+}
+
+/* Add this to your existing CSS */
+
+.mobile-controls {
+  display: flex;
+  gap: 10px;
+}
+
+@media screen and (min-width: 769px) {
+  #input-area {
+    display: flex;
+    align-items: center;
+  }
+  
+  #user-input {
+    flex-grow: 1;
+    margin-right: 10px;
+  }
+  
+  .mobile-controls {
+    display: flex;
+    align-items: center;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .mobile-controls {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    width: 100%;
+  }
+  
+  #send-button {
+    width: 100%;
+  }
+}
+
+/* Improve tap targets for mobile */
+@media (hover: none) and (pointer: coarse) {
+  #send-button, .file-upload-btn, .message-action-button, .terminal-button {
+    min-height: 44px; /* Minimum Apple-recommended touch target size */
+  }
+  
+  .bot-message:hover .message-actions {
+    opacity: 1; /* Always show action buttons on touch devices */
+  }
+}
