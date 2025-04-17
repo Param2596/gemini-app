@@ -14,8 +14,16 @@ updateClock(); // Update immediately on load
 document.addEventListener('DOMContentLoaded', () => {
     // Get API key from environment or a secure endpoint
     fetch('/api/getKey')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`API key fetch failed: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            if (!data.apiKey) {
+                throw new Error("No API key returned from server");
+            }
             CONFIG.API_KEY = data.apiKey;
             console.log("API key loaded securely");
             
@@ -30,5 +38,13 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => {
             console.error("Failed to load API key:", error);
+            document.getElementById('status-message').textContent = "API ERROR";
+            
+            // Show error message in chat
+            const chatOutput = document.getElementById('chat-output');
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'message error-message';
+            errorMsg.textContent = "ERROR: Failed to load API key. Please check console for details.";
+            chatOutput.appendChild(errorMsg);
         });
 });
