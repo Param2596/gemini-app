@@ -449,17 +449,19 @@ class RetroTerminal {
                 const fileData = await Promise.all(filePromises);
                 response = await window.geminiAPI.sendMessageWithFiles(message, fileData);
                 
-                // Clear attached files
+                // Clear attached files and hide preview container AFTER successful processing/sending
                 this.attachedFiles = [];
                 document.getElementById('file-preview-container').innerHTML = '';
-                document.getElementById('file-preview-container').style.display = 'none';
+                document.getElementById('file-preview-container').style.display = 'none'; // Hide it
             } else {
                 // Regular message without files
                 response = await window.geminiAPI.sendMessage(message);
             }
             
             // Add response to chat
-            this.addMessage('bot', response);
+            if (response) { // Check if response exists (might not if only files were sent and API doesn't return text)
+                 this.addMessage('bot', response);
+            }
         } catch (error) {
             console.error('Error sending message:', error);
             this.addMessage('error', `Failed to get response: ${error.message}`);
@@ -903,53 +905,75 @@ class RetroTerminal {
     initializeFileUpload() {
         const fileInput = document.getElementById('file-upload');
         const previewContainer = document.getElementById('file-preview-container');
-        
+
         // Handle file selection
         fileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files.length > 0) {
-                // Show the preview container
-                previewContainer.style.display = 'flex';
-                
+                // Show the preview container if it's not already visible
+                if (previewContainer.style.display !== 'flex') {
+                    previewContainer.style.display = 'flex';
+                    // Clear any previous previews when adding new files
+                    previewContainer.innerHTML = '';
+                    this.attachedFiles = []; // Clear the array too
+                }
+
                 // Process each file
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
-                    
-                    // Check file size (20MB limit)
+
+                    // Check file size (e.g., 20MB limit)
                     if (file.size > 20 * 1024 * 1024) {
-                        this.addMessage('error', `File "${file.name}" exceeds 20MB size limit`);
-                        continue;
+                        this.addMessage('error', `File "${file.name}" is too large (max 20MB).`);
+                        continue; // Skip this file
                     }
-                    
-                    // Add to attached files
+
+                    // Add to attached files array
                     this.attachedFiles.push(file);
-                    
+
                     // Create preview element
                     const preview = document.createElement('div');
                     preview.className = 'file-preview';
-                    preview.innerHTML = `
-                        ${file.name}
-                        <span class="file-preview-remove" data-filename="${file.name}">×</span>
-                    `;
-                    
-                    // Add remove functionality
-                    preview.querySelector('.file-preview-remove').addEventListener('click', () => {
-                        this.attachedFiles = this.attachedFiles.filter(f => f.name !== file.name);
-                        preview.remove();
-                        
-                        // Hide container if empty
-                        if (this.attachedFiles.length === 0) {
-                            previewContainer.style.display = 'none';
-                        }
-                    });
-                    
+                    preview.dataset.fileName = file.name; // Store filename for removal
+
+                    // Create remove button
+                    const removeButton = document.createElement('span');
+                    removeButton.className = 'file-preview-remove';
+                    removeButton.innerHTML = '&times;'; // 'x' symbol
+                    removeButton.title = 'Remove file';
+                    removeButton.onclick = () => this.removePreview(file.name);
+
+                    // Set preview content (filename + remove button)
+                    preview.textContent = file.name; // Show filename
+                    preview.appendChild(removeButton); // Add remove button
+
+                    // Append preview to container
                     previewContainer.appendChild(preview);
                 }
             }
-            
-            // Reset input so the same file can be selected again
+
+            // Reset input so the same file can be selected again if needed
             fileInput.value = '';
         });
+    }
+
+    // NEW or UPDATED: Function to remove a file preview
+    removePreview(fileNameToRemove) {
+        const previewContainer = document.getElementById('file-preview-container');
+
+        // Remove file from the attachedFiles array
+        this.attachedFiles = this.attachedFiles.filter(file => file.name !== fileNameToRemove);
+
+        // Remove the preview element from the DOM
+        const previewElement = previewContainer.querySelector(`.file-preview[data-file-name="${fileNameToRemove}"]`);
+        if (previewElement) {
+            previewContainer.removeChild(previewElement);
+        }
+
+        // Hide the container if no previews are left
+        if (previewContainer.children.length === 0) {
+            previewContainer.style.display = 'none';
+        }
     }
 
     // NEW: Initialize Settings Panel

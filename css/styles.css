@@ -26,12 +26,7 @@ html, body {
 }
 
 /* Adjust text line height for better reading */
-.bot-message {
-    display: block;
-    line-height: 1.1; /* Slightly reduced for compactness */
-    white-space: pre-wrap; /* Keep this to respect line breaks in the source text */
-    margin-bottom: 8px;
-}
+
 
 /* Improve contrast and readability without losing retro feel */
 :root {
@@ -368,10 +363,6 @@ html, body {
 /* Ensure the earlier rule for compact paragraphs (around line 258) is active: */
 /* .bot-message p { margin-top: 0; margin-bottom: 2px; padding: 0; } */
 
-/* Keep the rule for spacing between consecutive paragraphs */
-.bot-message p + p {
-    margin-top: 4px; /* Add a small space between consecutive paragraphs */
-}
 
 .bot-message br + br {
     /* ... existing br + br styles ... */
@@ -527,6 +518,7 @@ pre code .function {
     border-top: 1px solid var(--border-color);
     padding: 15px 20px;
     background-color: var(--input-bg);
+    position: relative; /* Add this line */
 }
 
 #user-input {
@@ -544,10 +536,7 @@ pre code .function {
     caret-shape: block;
 }
 
-#user-input:focus {
-    border-color: var (--text-color);
-    box-shadow: 0 0 8px var(--glow-color);
-}
+
 
 #send-button {
     background-color: var(--background-color);
@@ -940,14 +929,18 @@ th {
 
 #file-preview-container {
     position: absolute;
-    left: 0;
+    left: 20px; /* Align with input padding */
     bottom: calc(100% + 5px); /* Position it right above the input box with less space */
-    width: calc(100% - 20px); /* Match width with the input area minus padding */
+    width: calc(100% - 40px); /* Account for left/right padding of input-area */
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
     padding: 5px;
     z-index: 100;
     display: none; /* Hidden by default */
+    flex-wrap: wrap; /* Allow previews to wrap */
+    gap: 5px; /* Add gap between previews */
+    max-height: 100px; /* Limit height */
+    overflow-y: auto; /* Add scroll if needed */
 }
 
 .file-preview {
@@ -1049,6 +1042,7 @@ th {
   #input-area {
     padding: 10px;
     flex-direction: column;
+    position: relative;
   }
   
   #user-input {
@@ -1088,8 +1082,9 @@ th {
   #file-preview-container {
     width: calc(100% - 20px);
     left: 10px;
-    max-height: 150px;
+    max-height: 100px;
     overflow-y: auto;
+    margin-bottom: 5px; /* Add space between preview and input area */
   }
 }
 
@@ -1110,6 +1105,7 @@ th {
     grid-template-columns: auto 1fr;
     grid-gap: 10px;
     padding: 10px;
+    position: relative;
   }
   
   #user-input {
