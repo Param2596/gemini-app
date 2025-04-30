@@ -336,28 +336,6 @@ class RetroTerminal {
         });
     }
 
-    // Process markdown tables
-    processMarkdownTables(text) {
-        const tableRegex = /\n((\|[^\n]+\|\n)((?:\|[-:\s]+)+\|\n)((?:\|[^\n]+\|\n)+))/g;
-        
-        return text.replace(tableRegex, (match, table) => {
-            // Split table into rows
-            const rows = table.trim().split('\n');
-            
-            // Process header row
-            const headerRow = rows[0];
-            const headerCells = headerRow.split('|').slice(1, -1);
-            const header = `<tr>${headerCells.map(cell => `<th>${cell.trim()}</th>`).join('')}</tr>`;
-            
-            const body = bodyRows.map(row => {
-                const cells = row.split('|').slice(1, -1);
-                return `<tr>${cells.map(cell => `<td>${cell.trim()}</td>`).join('')}</tr>`;
-            }).join('');
-            
-            // Assemble the table
-            return `\n<div class="table-container"><table><thead>${header}</thead><tbody>${body}</tbody></table></div>\n`;
-        });
-    }
 
     // Escape HTML to prevent XSS
     escapeHtml(unsafe) {
@@ -456,38 +434,30 @@ class RetroTerminal {
     }
 
     // Update typeText to properly handle markdown chunks
-        typeText(element, text, speed = 10, chunkDelay = 200) {
+    typeText(element, text, speed = 10, chunkDelay = 200) {
         return new Promise(resolve => {
             // Clear the element first
             element.innerHTML = '';
             
-            // Split into chunks while preserving code blocks
-            const chunks = [];
+            // Split into paragraphs
+            const paragraphs = text.split(/\n\s*\n/);
             let currentChunk = '';
-            let insideCodeBlock = false;
+            const chunks = [];
             
-            text.split('\n').forEach(line => {
-                if (line.startsWith('```')) {
-                    if (insideCodeBlock) {
-                        // End of code block
-                        currentChunk += line + '\n';
+            paragraphs.forEach(paragraph => {
+                // Check if it's a code block
+                if (paragraph.trim().startsWith('```')) {
+                    if (currentChunk) {
                         chunks.push(currentChunk);
                         currentChunk = '';
-                        insideCodeBlock = false;
-                    } else {
-                        // Start of code block
-                        if (currentChunk) {
-                            chunks.push(currentChunk);
-                        }
-                        currentChunk = line + '\n';
-                        insideCodeBlock = true;
                     }
+                    chunks.push(paragraph);
                 } else {
-                    currentChunk += line + '\n';
-                    if (!insideCodeBlock && line === '') {
-                        chunks.push(currentChunk);
-                        currentChunk = '';
+                    // Regular text - combine consecutive lines
+                    if (currentChunk) {
+                        currentChunk += '\n\n';
                     }
+                    currentChunk += paragraph.replace(/\n/g, ' ').trim();
                 }
             });
             
@@ -495,13 +465,13 @@ class RetroTerminal {
             if (currentChunk) {
                 chunks.push(currentChunk);
             }
-    
+
             let current = 0;
-    
+
             const typeChunk = () => {
                 if (current < chunks.length) {
                     // Get all chunks up to current
-                    const partialText = chunks.slice(0, current + 1).join('');
+                    const partialText = chunks.slice(0, current + 1).join('\n\n');
                     // Render markdown for the complete partial text
                     element.innerHTML = this.renderMarkdown(partialText);
                     
@@ -517,7 +487,7 @@ class RetroTerminal {
                     resolve();
                 }
             };
-    
+
             typeChunk();
         });
     }
