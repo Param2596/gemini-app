@@ -50,8 +50,9 @@ class RetroTerminal {
         });
 
         this.initializeEventListeners();
-        this.initializeTerminal();
-        this.initializeHistory(); // Add this line to initialize history functionality
+        this.initializeHeaderControls(); // Changed from initializeTerminal
+        this.initializeHistoryPanel(); // Renamed for clarity
+        this.initializeSettingsPanel(); // Add this line
         this.initializeFileUpload();
         
         // Auto-save chat when window is closed
@@ -93,33 +94,55 @@ class RetroTerminal {
         });
     }
 
-    // Initialize the terminal with boot sequence
-    initializeTerminal() {
+    // Renamed and updated to handle all header buttons
+    initializeHeaderControls() {
         // First, save the existing content if there's any real conversation
         if (this.chatOutput && this.chatOutput.querySelectorAll('.user-message').length > 0) {
             this.saveCurrentChat();
         }
-        
-        // Add NEW CHAT button to terminal header
+
         const controlsDiv = document.querySelector('#terminal-controls');
-        
+        controlsDiv.innerHTML = ''; // Clear existing controls first
+
+        // Add NEW CHAT button
         const newChatButton = document.createElement('button');
         newChatButton.id = 'new-chat-button-header';
-        newChatButton.className = 'terminal-button';
+        newChatButton.className = 'terminal-button header-button';
         newChatButton.textContent = 'NEW CHAT';
         newChatButton.onclick = () => this.startNewChat();
-        
-        // Add it before the theme selector
-        controlsDiv.insertBefore(newChatButton, controlsDiv.firstChild);
-        
-        // Create initial boot prompt
+        controlsDiv.appendChild(newChatButton);
+
+        // Add HISTORY button
+        const historyButton = document.createElement('button');
+        historyButton.id = 'history-button';
+        historyButton.className = 'terminal-button header-button';
+        historyButton.textContent = 'HISTORY';
+        historyButton.onclick = () => this.toggleHistoryPanel();
+        controlsDiv.appendChild(historyButton);
+
+        // Add SETTINGS button
+        const settingsButton = document.createElement('button');
+        settingsButton.id = 'settings-button';
+        settingsButton.className = 'terminal-button header-button';
+        settingsButton.textContent = 'SETTINGS';
+        settingsButton.onclick = () => this.toggleSettingsPanel();
+        controlsDiv.appendChild(settingsButton);
+
+        // Add Theme Selector (keeping existing structure)
+        const themeWrapper = document.createElement('div');
+        themeWrapper.className = 'select-wrapper';
+        themeWrapper.appendChild(this.themeSelector); // Use the existing selector
+        controlsDiv.appendChild(themeWrapper);
+
+
+        // Create initial boot prompt (moved from initializeTerminal)
         const bootPrompt = document.createElement('div');
         bootPrompt.className = 'message bot-message';
         bootPrompt.innerHTML = 'SYSTEM: Terminal ready. <button id="boot-system" style="background-color: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color); cursor: pointer; padding: 5px 10px; font-family: inherit;">INITIALIZE SYSTEM</button>';
-        
+
         this.chatOutput.innerHTML = ''; // Clear existing messages
         this.chatOutput.appendChild(bootPrompt);
-        
+
         // Setup boot sequence to run after button click
         document.getElementById('boot-system').addEventListener('click', () => {
             this.bootSystem();
@@ -591,63 +614,51 @@ class RetroTerminal {
         }
     }
 
-    // Initialize chat history functionality
-    initializeHistory() {
-        // Add a history button to the header
-        const controlsDiv = document.querySelector('#terminal-controls');
-        
-        const historyButton = document.createElement('button');
-        historyButton.id = 'history-button';
-        historyButton.className = 'terminal-button';
-        historyButton.textContent = 'HISTORY';
-        historyButton.onclick = () => this.toggleHistoryPanel();
-        
-        controlsDiv.appendChild(historyButton);
-        
+    // Renamed from initializeHistory
+    initializeHistoryPanel() {
         // Create history panel (hidden initially)
         const historyPanel = document.createElement('div');
         historyPanel.id = 'history-panel';
-        historyPanel.className = 'history-panel';
+        historyPanel.className = 'side-panel history-panel'; // Added common class
         historyPanel.style.display = 'none';
-        
+
         const historyHeader = document.createElement('div');
-        historyHeader.className = 'history-header';
-        historyHeader.innerHTML = '<span>CHAT HISTORY</span><button id="close-history">X</button>';
-        
+        historyHeader.className = 'panel-header'; // Common class
+        historyHeader.innerHTML = '<span>CHAT HISTORY</span><button class="close-panel-button" data-panel="history-panel">X</button>';
+
         const historyList = document.createElement('div');
         historyList.id = 'history-list';
-        historyList.className = 'history-list';
-        
+        historyList.className = 'panel-content history-list'; // Common class
+
         const buttonsContainer = document.createElement('div');
-        buttonsContainer.className = 'history-buttons-container';
-        
+        buttonsContainer.className = 'panel-buttons history-buttons-container'; // Common class
+
         const newChatButton = document.createElement('button');
         newChatButton.id = 'new-chat-button';
         newChatButton.className = 'terminal-button';
         newChatButton.textContent = 'NEW CHAT';
         newChatButton.onclick = () => this.startNewChat();
-        
-        // Add new "DELETE ALL" button
+
         const deleteAllButton = document.createElement('button');
         deleteAllButton.id = 'delete-all-button';
         deleteAllButton.className = 'terminal-button delete-all';
         deleteAllButton.textContent = 'DELETE ALL';
         deleteAllButton.onclick = () => this.deleteAllChats();
-        
+
         buttonsContainer.appendChild(newChatButton);
         buttonsContainer.appendChild(deleteAllButton);
-        
+
         historyPanel.appendChild(historyHeader);
         historyPanel.appendChild(historyList);
         historyPanel.appendChild(buttonsContainer);
-        
+
         document.querySelector('#crt-container').appendChild(historyPanel);
-        
-        // Add close button listener
-        document.querySelector('#close-history').addEventListener('click', () => {
-            document.querySelector('#history-panel').style.display = 'none';
+
+        // Add close button listener using event delegation
+        historyHeader.querySelector('.close-panel-button').addEventListener('click', (e) => {
+            this.toggleHistoryPanel(); // Use the toggle function
         });
-        
+
         // Load saved chats
         this.loadSavedChats();
     }
@@ -655,7 +666,12 @@ class RetroTerminal {
     // Toggle history panel visibility
     toggleHistoryPanel() {
         const panel = document.querySelector('#history-panel');
+        const settingsPanel = document.querySelector('#settings-panel');
         if (panel.style.display === 'none') {
+             // Hide settings panel if open
+            if (settingsPanel.style.display !== 'none') {
+                settingsPanel.style.display = 'none';
+            }
             panel.style.display = 'flex';
             this.loadSavedChats(); // Refresh the list when opening
         } else {
@@ -934,5 +950,146 @@ class RetroTerminal {
             // Reset input so the same file can be selected again
             fileInput.value = '';
         });
+    }
+
+    // NEW: Initialize Settings Panel
+    initializeSettingsPanel() {
+        const settingsPanel = document.createElement('div');
+        settingsPanel.id = 'settings-panel';
+        settingsPanel.className = 'side-panel settings-panel'; // Added common class
+        settingsPanel.style.display = 'none';
+
+        const settingsHeader = document.createElement('div');
+        settingsHeader.className = 'panel-header'; // Common class
+        settingsHeader.innerHTML = '<span>SETTINGS</span><button class="close-panel-button" data-panel="settings-panel">X</button>';
+
+        const settingsContent = document.createElement('div');
+        settingsContent.id = 'settings-content';
+        settingsContent.className = 'panel-content settings-content'; // Common class
+
+        // Add settings fields
+        settingsContent.innerHTML = `
+            <div class="setting-item">
+                <label for="setting-system-prompt">System Prompt:</label>
+                <textarea id="setting-system-prompt" rows="8"></textarea>
+            </div>
+            <div class="setting-item">
+                <label for="setting-temperature">Temperature:</label>
+                <input type="number" id="setting-temperature" step="0.1" min="0" max="2.0">
+            </div>
+            <div class="setting-item">
+                <label for="setting-top-k">Top K:</label>
+                <input type="number" id="setting-top-k" step="1" min="1">
+            </div>
+            <div class="setting-item">
+                <label for="setting-top-p">Top P:</label>
+                <input type="number" id="setting-top-p" step="0.05" min="0" max="1">
+            </div>
+             <div class="setting-item">
+                <label for="setting-model">Model:</label>
+                <input type="text" id="setting-model">
+            </div>
+        `;
+
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'panel-buttons settings-buttons-container'; // Common class
+
+        const saveButton = document.createElement('button');
+        saveButton.id = 'save-settings-button';
+        saveButton.className = 'terminal-button';
+        saveButton.textContent = 'SAVE SETTINGS';
+        saveButton.onclick = () => this.saveSettings();
+
+        buttonsContainer.appendChild(saveButton);
+
+        settingsPanel.appendChild(settingsHeader);
+        settingsPanel.appendChild(settingsContent);
+        settingsPanel.appendChild(buttonsContainer);
+
+        document.querySelector('#crt-container').appendChild(settingsPanel);
+
+        // Add close button listener
+         settingsHeader.querySelector('.close-panel-button').addEventListener('click', (e) => {
+            this.toggleSettingsPanel(); // Use the toggle function
+        });
+    }
+
+    // NEW: Toggle Settings Panel
+    toggleSettingsPanel() {
+        const panel = document.querySelector('#settings-panel');
+        const historyPanel = document.querySelector('#history-panel');
+        if (panel.style.display === 'none') {
+            // Hide history panel if open
+            if (historyPanel.style.display !== 'none') {
+                historyPanel.style.display = 'none';
+            }
+            // Populate with current settings
+            document.getElementById('setting-system-prompt').value = CONFIG.SYSTEM_PROMPT || '';
+            document.getElementById('setting-temperature').value = CONFIG.TEMPERATURE || 1.0;
+            document.getElementById('setting-top-k').value = CONFIG.TOP_K || 40;
+            document.getElementById('setting-top-p').value = CONFIG.TOP_P || 0.95;
+            document.getElementById('setting-model').value = CONFIG.MODEL || 'gemini-1.5-flash'; // Default if not set
+            panel.style.display = 'flex';
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+
+    // NEW: Save Settings
+    saveSettings() {
+        try {
+            const newPrompt = document.getElementById('setting-system-prompt').value;
+            const newTemp = parseFloat(document.getElementById('setting-temperature').value);
+            const newTopK = parseInt(document.getElementById('setting-top-k').value, 10);
+            const newTopP = parseFloat(document.getElementById('setting-top-p').value);
+            const newModel = document.getElementById('setting-model').value.trim();
+
+            // Basic validation
+            if (isNaN(newTemp) || newTemp < 0 || newTemp > 2.0) {
+                alert("Invalid Temperature value. Must be between 0.0 and 2.0.");
+                return;
+            }
+            if (isNaN(newTopK) || newTopK < 1) {
+                alert("Invalid Top K value. Must be 1 or greater.");
+                return;
+            }
+             if (isNaN(newTopP) || newTopP < 0 || newTopP > 1.0) {
+                alert("Invalid Top P value. Must be between 0.0 and 1.0.");
+                return;
+            }
+            if (!newModel) {
+                 alert("Model name cannot be empty.");
+                return;
+            }
+
+
+            // Update the global CONFIG object
+            CONFIG.SYSTEM_PROMPT = newPrompt;
+            CONFIG.TEMPERATURE = newTemp;
+            CONFIG.TOP_K = newTopK;
+            CONFIG.TOP_P = newTopP;
+            CONFIG.MODEL = newModel;
+
+            // Optionally: Notify the API handler if it needs explicit updates
+            if (window.geminiAPI && typeof window.geminiAPI.updateSettings === 'function') {
+                 window.geminiAPI.updateSettings(CONFIG);
+                 console.log("Gemini API settings updated.");
+            } else {
+                 console.log("Global CONFIG updated. API will use new settings on next call.");
+            }
+
+
+            document.getElementById('status-message').textContent = "SETTINGS SAVED";
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = "READY";
+            }, 2000);
+
+            this.toggleSettingsPanel(); // Close panel after saving
+
+        } catch (error) {
+            console.error("Error saving settings:", error);
+            this.addMessage('error', 'Failed to save settings. Check console.');
+            document.getElementById('status-message').textContent = "SAVE FAILED";
+        }
     }
 }

@@ -28,7 +28,9 @@ html, body {
 /* Adjust text line height for better reading */
 .bot-message {
     display: block;
-    line-height: 1.15; /* Slightly increased for readability but still compact */
+    line-height: 1.1; /* Slightly reduced for compactness */
+    white-space: pre-wrap; /* Keep this to respect line breaks in the source text */
+    margin-bottom: 8px;
 }
 
 /* Improve contrast and readability without losing retro feel */
@@ -186,7 +188,7 @@ html, body {
 #terminal-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 5px; /* Reduce gap */
 }
 
 #theme-selector {
@@ -215,6 +217,7 @@ html, body {
 .select-wrapper {
     position: relative;
     display: inline-block;
+    margin-left: 5px; /* Add some space before theme selector */
 }
 
 .select-wrapper::after {
@@ -270,9 +273,45 @@ html, body {
 
 /* Fix spacing in bot messages */
 .bot-message {
-    white-space: pre-wrap;
-    line-height: 1; /* Reduce line height to minimum */
+    white-space: pre-wrap; /* Keep this to respect line breaks in the source text */
+    line-height: 1.1; /* Slightly reduce line-height */
     margin-bottom: 8px;
+}
+
+/* Remove extra margins from paragraphs */
+.bot-message p {
+    margin-top: 0; /* Remove top margin */
+    margin-bottom: 2px; /* Reduce bottom margin significantly */
+    padding: 0;
+}
+
+/* Eliminate extra space between elements */
+.bot-message * {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Re-apply specific margins where needed */
+.bot-message p + p {
+    margin-top: 4px; /* Add a small space between consecutive paragraphs */
+}
+
+.bot-message ul, .bot-message ol {
+    margin-top: 4px;
+    margin-bottom: 4px;
+    margin-left: 20px;
+    padding-left: 10px;
+}
+
+.bot-message li {
+    margin-bottom: 2px; /* Reduce space between list items */
+}
+
+.bot-message pre {
+    margin: 8px 0; /* Keep more space around code blocks */
+    padding: 6px;
+    background-color: rgba(30, 30, 30, 0.7);
+    border: 1px solid var(--border-color);
 }
 
 /* Remove extra margins from paragraphs */
@@ -317,6 +356,30 @@ html, body {
     line-height: 1.15; /* Slightly increased for readability but still compact */
 }
 
+/* This rule (around line 320) is likely causing the large spacing, overriding previous rules. */
+/* Comment it out to allow the earlier, more compact spacing rules to apply. */
+/*
+.bot-message p {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+*/
+
+/* Ensure the earlier rule for compact paragraphs (around line 258) is active: */
+/* .bot-message p { margin-top: 0; margin-bottom: 2px; padding: 0; } */
+
+/* Keep the rule for spacing between consecutive paragraphs */
+.bot-message p + p {
+    margin-top: 4px; /* Add a small space between consecutive paragraphs */
+}
+
+.bot-message br + br {
+    /* ... existing br + br styles ... */
+    content: "";
+    display: block;
+    margin-top: 0.5em;
+}
+
 .bot-message p {
     margin-top: 0.5em;
     margin-bottom: 0.5em;
@@ -342,9 +405,7 @@ html, body {
     padding: 0;
 }
 
-.bot-message li {
-    margin-bottom: 2px;
-}
+
 
 /* Style basic markdown HTML */
 .bot-message strong { 
@@ -352,8 +413,33 @@ html, body {
     color: var(--text-color);
 }
 
-.bot-message em { 
-    font-style: italic; 
+.bot-message em {
+    font-style: italic;
+}
+
+.bot-message ul, .bot-message ol {
+    margin-left: 20px;
+    padding-left: 10px;
+    /* Use the more compact margins defined earlier (around line 274) */
+    /* margin: 2px 0 2px 20px; */
+}
+
+/* This rule (around line 358) overrides the compact setting. Remove or comment it out. */
+/*
+.bot-message li {
+    margin-bottom: 8px;
+}
+*/
+
+/* Ensure the earlier rule (around line 278) is active: */
+/* .bot-message li { margin-bottom: 2px; } */
+
+.bot-message code {
+    background-color: rgba(30, 30, 30, 0.7);
+    padding: 0 3px;
+    border: none;
+    font-weight: bold; /* Make code stand out */
+    font-family: 'VT323', 'Courier New', monospace;
 }
 
 .bot-message ul, .bot-message ol { 
@@ -361,9 +447,7 @@ html, body {
     padding-left: 10px; 
 }
 
-.bot-message li { 
-    margin-bottom: 8px; 
-}
+
 
 .bot-message code {
     background-color: rgba(30, 30, 30, 0.7);
@@ -461,7 +545,7 @@ pre code .function {
 }
 
 #user-input:focus {
-    border-color: var(--text-color);
+    border-color: var (--text-color);
     box-shadow: 0 0 8px var(--glow-color);
 }
 
@@ -1090,4 +1174,213 @@ th {
   .bot-message:hover .message-actions {
     opacity: 1; /* Always show action buttons on touch devices */
   }
+}
+
+/* Common styles for side panels (History & Settings) */
+.side-panel {
+    position: absolute;
+    top: 51px; /* Below header */
+    right: 0;
+    width: 350px; /* Slightly wider */
+    max-width: 90%; /* Max width on smaller screens */
+    height: calc(100vh - 51px); /* Full height below header */
+    max-height: calc(100vh - 51px);
+    background-color: var(--input-bg);
+    border-left: 1px solid var(--border-color);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease-in-out; /* Add transition */
+    transform: translateX(100%); /* Start off-screen */
+}
+
+.side-panel[style*="display: flex"] {
+    transform: translateX(0); /* Slide in */
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--background-color); /* Header background */
+    flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.panel-header span {
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.close-panel-button {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+}
+
+.close-panel-button:hover {
+    color: #FF5555; /* Red on hover */
+}
+
+.panel-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-color) var(--input-bg);
+}
+
+.panel-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+    background: var(--input-bg);
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+    background-color: var(--text-color);
+    border: 1px solid var(--input-bg);
+}
+
+.panel-buttons {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--background-color); /* Footer background */
+    flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+.panel-buttons .terminal-button {
+    width: 48%; /* Adjust button width */
+    padding: 8px 10px; /* Adjust padding */
+}
+
+/* Specific History Panel Styles (adjust if needed) */
+.history-panel {
+    /* Keep specific styles if any */
+}
+
+.history-list {
+    /* Keep specific styles if any */
+}
+
+.history-item {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: default; /* Change cursor if items aren't clickable directly */
+}
+
+.history-item:hover {
+    background-color: rgba(255, 255, 255, 0.05); /* Subtle hover */
+}
+
+/* Settings Panel Specific Styles */
+.settings-panel {
+    /* Specific styles if needed */
+}
+
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between setting items */
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.setting-item label {
+    margin-bottom: 5px;
+    font-weight: bold;
+    opacity: 0.8;
+}
+
+.setting-item input[type="text"],
+.setting-item input[type="number"],
+.setting-item textarea {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 14px; /* Slightly smaller font for settings */
+    outline: none;
+    border-radius: 0;
+    width: 100%;
+    box-sizing: border-box; /* Include padding in width */
+}
+
+.setting-item input:focus,
+.setting-item textarea:focus {
+    border-color: var(--text-color);
+    box-shadow: 0 0 5px var(--glow-color);
+}
+
+.setting-item textarea {
+    resize: vertical; /* Allow vertical resize */
+    min-height: 100px; /* Minimum height for prompt */
+    line-height: 1.4;
+}
+
+.settings-buttons-container .terminal-button {
+    width: 100%; /* Save button takes full width */
+}
+
+/* Adjust header controls layout */
+#terminal-controls {
+    gap: 5px; /* Reduce gap */
+}
+
+.header-button {
+    padding: 4px 8px; /* Smaller padding for header buttons */
+    font-size: 12px; /* Smaller font size */
+}
+
+/* Ensure select wrapper aligns well */
+.select-wrapper {
+    margin-left: 5px; /* Add some space before theme selector */
+}
+
+/* Responsive adjustments for panels */
+@media screen and (max-width: 768px) {
+    .side-panel {
+        width: 95%; /* Wider on mobile */
+        top: 45px; /* Adjust if header height changes */
+        height: calc(100vh - 45px);
+        max-height: calc(100vh - 45px);
+        border-left: none; /* No left border on mobile */
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); /* Shadow below */
+    }
+
+    .panel-header {
+        padding: 8px 12px;
+    }
+
+    .panel-content {
+        padding: 12px;
+    }
+
+    .panel-buttons {
+        padding: 8px 12px;
+    }
+
+    .panel-buttons .terminal-button {
+        padding: 6px 8px;
+    }
+
+    .setting-item input,
+    .setting-item textarea {
+        font-size: 13px;
+    }
 }

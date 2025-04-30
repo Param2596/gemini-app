@@ -6,7 +6,7 @@ const CONFIG = {
     API_KEY: "", // Replace this with your actual API key
     MODEL: "gemini-2.0-flash", // Changed to a proper model name
     MAX_TOKENS: 2048,
-    TEMPERATURE: 1.5,
+    TEMPERATURE: 1,
     TOP_K: 40,
     TOP_P: 0.95,
     BOOT_SOUND: 'audio.mp3', // Path to your boot sound
