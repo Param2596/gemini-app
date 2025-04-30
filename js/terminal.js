@@ -12,6 +12,43 @@ class RetroTerminal {
         this.currentConversationId = Date.now().toString();
         this.attachedFiles = [];
         
+        // Update Remarkable initialization
+        try {
+            this.md = new Remarkable('full', {
+                html: false,
+                xhtmlOut: false,
+                breaks: true,
+                langPrefix: 'language-',
+                linkTarget: '_blank',
+                typographer: true,
+                highlight: function (str, lang) {
+                    if (window.hljs && lang && window.hljs.getLanguage(lang)) {
+                        try {
+                            return window.hljs.highlight(str, {language: lang}).value;
+                        } catch (err) {
+                            console.error('Highlight.js error:', err);
+                        }
+                    }
+                    return ''; // Use external default escaping
+                }
+            });
+
+            console.log('Remarkable initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize Remarkable:', error);
+            this.md = null;
+        }
+
+        // Add custom rules for terminal-specific elements
+        this.md.use((remarkable) => {
+            const defaultRender = remarkable.renderer.code;
+            remarkable.renderer.code = function (code, lang) {
+                // Add copy button container
+                const html = defaultRender.call(remarkable.renderer, code, lang);
+                return `<div class="code-block-container">${html}</div>`;
+            };
+        });
+
         this.initializeEventListeners();
         this.initializeTerminal();
         this.initializeHistory(); // Add this line to initialize history functionality
@@ -180,6 +217,10 @@ class RetroTerminal {
             // Bot message container
             const messageContentDiv = document.createElement('div');
             messageContentDiv.className = 'message-content';
+            messageContentDiv.innerHTML = this.renderMarkdown(content);
+            
+            // Initialize code blocks
+            this.initializeCodeBlock(messageContentDiv);
             
             // Create separator (but don't add it yet)
             const separator = document.createElement('div');
@@ -239,70 +280,60 @@ class RetroTerminal {
         }
     }
 
-    // Replace your current renderMarkdown method
-
+    // Update renderMarkdown to handle cases where Remarkable isn't available
     renderMarkdown(text) {
-        // Handle tables - must process these first
-        text = this.processMarkdownTables(text);
+        if (!this.md) {
+            console.warn('Remarkable not initialized, falling back to plain text');
+            return this.escapeHtml(text);
+        }
         
-        // Handle code blocks with language specification
-        text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
-            const lang = language ? ` data-language="${language}"` : '';
-            return `<pre${lang}><code>${this.escapeHtml(code.trim())}</code></pre>`;
-        });
-        
-        // Handle inline code
-        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-        
-        // Handle bold text
-        text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        
-        // Handle italic text
-        text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-        
-        // Handle lists (better handling)
-        // Unordered lists
-        text = text.replace(/(?:^|\n)(\s*)-\s+(.+)(?:\n|$)/g, (match, indent, content) => {
-            return `\n${indent}<li>${content}</li>\n`;
-        });
-        
-        // Ordered lists
-        text = text.replace(/(?:^|\n)(\s*)\d+\.\s+(.+)(?:\n|$)/g, (match, indent, content) => {
-            return `\n${indent}<li class="ordered">${content}</li>\n`;
-        });
-        
-        // Wrap consecutive list items in ul/ol tags
-        text = text.replace(/(<li(?:\s+class="ordered")?>.*?<\/li>\n)+/gs, (match) => {
-            if (match.includes('class="ordered"')) {
-                return `<ol>${match}</ol>`;
-            }
-            return `<ul>${match}</ul>`;
-        });
-        
-        // Handle headers
-        text = text.replace(/^### (.*$)/gm, '<h3>$1</h3>');
-        text = text.replace(/^## (.*$)/gm, '<h2>$1</h2>');
-        text = text.replace(/^# (.*$)/gm, '<h1>$1</h1>');
-        
-        // Handle horizontal rules
-        text = text.replace(/^\s*---\s*$/gm, '<hr>');
-        
-        // Handle links
-        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-        
-        // Handle Images: ![alt](url)
-        text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
-            // Basic security check for common protocols
-            if (url.startsWith('http:') || url.startsWith('https:') || url.startsWith('data:image')) {
-                return `<img src="${this.escapeHtml(url)}" alt="${this.escapeHtml(alt)}" class="rendered-image">`;
-            }
-            return `[Image: ${this.escapeHtml(alt)} - Invalid URL]`; // Handle potentially unsafe URLs
-        });
+        try {
+            // Pre-process custom terminal elements
+            text = this.preprocessText(text);
+            
+            // Convert markdown to HTML using remarkable
+            let html = this.md.render(text);
+            
+            // Post-process for terminal-specific styling
+            html = this.postprocessHtml(html);
+            
+            return html;
+        } catch (error) {
+            console.error('Markdown rendering error:', error);
+            return this.escapeHtml(text);
+        }
+    }
 
-        // Handle paragraphs better
-        text = text.replace(/\n\s*\n/g, '\n<br>\n');
-        
+    // Add helper methods
+    preprocessText(text) {
+        // Handle terminal-specific pre-processing
+        // For example, replace ASCII art markers or custom syntax
         return text;
+    }
+
+    postprocessHtml(html) {
+        // Add copy buttons to code blocks
+        html = html.replace(/<div class="code-block-container">/g, 
+            '<div class="code-block-container"><button class="copy-button">COPY</button>');
+
+        // Ensure images have proper terminal styling
+        html = html.replace(/<img /g, '<img class="rendered-image" ');
+
+        return html;
+    }
+
+    // Update initialization of any copy buttons
+    initializeCodeBlock(element) {
+        const copyButtons = element.querySelectorAll('.copy-button');
+        copyButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const codeBlock = button.nextElementSibling;
+                if (codeBlock) {
+                    const code = codeBlock.textContent;
+                    this.copyToClipboard(code);
+                }
+            });
+        });
     }
 
     // Process markdown tables
@@ -424,27 +455,69 @@ class RetroTerminal {
         document.getElementById('clock').textContent = now.toLocaleTimeString('en-US', {hour12: false});
     }
 
-    // Update typeText to return a promise that resolves when typing is complete
-    typeText(element, text, speed = 10, chunkDelay = 200) {
+    // Update typeText to properly handle markdown chunks
+        typeText(element, text, speed = 10, chunkDelay = 200) {
         return new Promise(resolve => {
-            // Split by double newlines (paragraphs) or single newlines (lines)
-            const chunks = text.split(/\n{2,}/g);
+            // Clear the element first
+            element.innerHTML = '';
+            
+            // Split into chunks while preserving code blocks
+            const chunks = [];
+            let currentChunk = '';
+            let insideCodeBlock = false;
+            
+            text.split('\n').forEach(line => {
+                if (line.startsWith('```')) {
+                    if (insideCodeBlock) {
+                        // End of code block
+                        currentChunk += line + '\n';
+                        chunks.push(currentChunk);
+                        currentChunk = '';
+                        insideCodeBlock = false;
+                    } else {
+                        // Start of code block
+                        if (currentChunk) {
+                            chunks.push(currentChunk);
+                        }
+                        currentChunk = line + '\n';
+                        insideCodeBlock = true;
+                    }
+                } else {
+                    currentChunk += line + '\n';
+                    if (!insideCodeBlock && line === '') {
+                        chunks.push(currentChunk);
+                        currentChunk = '';
+                    }
+                }
+            });
+            
+            // Add any remaining content
+            if (currentChunk) {
+                chunks.push(currentChunk);
+            }
+    
             let current = 0;
-
+    
             const typeChunk = () => {
                 if (current < chunks.length) {
-                    // Render markdown for this chunk and append
-                    const chunkHtml = this.renderMarkdown(chunks[current]);
-                    // Append, not replace, to preserve previous content
-                    element.innerHTML += (current > 0 ? "<br><br>" : "") + chunkHtml;
+                    // Get all chunks up to current
+                    const partialText = chunks.slice(0, current + 1).join('');
+                    // Render markdown for the complete partial text
+                    element.innerHTML = this.renderMarkdown(partialText);
+                    
+                    // Initialize any code blocks in this chunk
+                    this.initializeCodeBlock(element);
+                    
+                    // Scroll to bottom
                     element.parentElement.scrollTop = element.parentElement.scrollHeight;
+                    
                     current++;
                     setTimeout(typeChunk, chunkDelay);
                 } else {
-                    // All chunks have been typed, resolve the promise
                     resolve();
                 }
             };
+    
             typeChunk();
         });
     }
