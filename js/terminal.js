@@ -170,14 +170,14 @@ class RetroTerminal {
         const bootSteps = [
             "BIOS v3.2.1 - Initializing memory...",
             "Memory check: 640K OK",
-            "Loading GEMINI/OS v2.5...",
-            "GEMINI Kernel loaded.",
+            `Loading ${CONFIG.BOT_NAME}/OS v2.5...`,
+            `${CONFIG.BOT_NAME} Kernel loaded.`,
             "Initializing neural interface...",
             "Network connection: OK",
             "Loading language modules...",
             "Loading creativity engines...",
             "Loading knowledge base...",
-            "GEMINI AI ready for interaction."
+            `${CONFIG.BOT_NAME} AI ready for interaction.`
         ];
         
         // Create a single message with all boot steps
@@ -205,7 +205,7 @@ class RetroTerminal {
                 
                 // Add welcome message as a separate message
                 setTimeout(() => {
-                    this.addMessage('bot', "Hello! I'm GEMINI. How can I assist you today?");
+                    this.addMessage('bot', `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?`);
                     document.getElementById('user-input').disabled = false;
                     document.getElementById('send-button').disabled = false;
                     document.getElementById('status-message').textContent = "READY";
@@ -280,15 +280,15 @@ class RetroTerminal {
             this.typeText(messageContentDiv, content).then(() => {
                 // Don't add separator for boot/welcome messages
                 if (!content.includes('BIOS') && !content.includes('Terminal ready') && 
-                    !content.includes('Memory check') && !content.includes('Loading GEMINI') && 
+                    !content.includes('Memory check') && !content.includes('Loading') && 
                     !content.includes('Initializing') && !content.includes('Network connection') &&
-                    !content.includes('GEMINI Kernel loaded.')&&
+                    !content.includes('Kernel loaded')&&
                     !content.includes('Loading language modules') &&
                     !content.includes('Loading creativity engines') &&
                     !content.includes('Loading knowledge base') &&
-                    !content.includes('GEMINI AI ready') &&
-                    !content.includes('GEMINI/OS') &&
-                    !content.includes("Hello! I'm GEMINI")) {
+                    !content.includes('AI ready') &&
+                    !content.includes('/OS') &&
+                    !content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
                     
                     // Add separator after content is typed and before action buttons
                     messageDiv.appendChild(separator);
@@ -712,7 +712,7 @@ class RetroTerminal {
                 const content = msg.querySelector('.message-content')?.textContent || msg.textContent;
                 
                 // Skip welcome message
-                if (content.includes("Hello! I'm GEMINI") || 
+                if (content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`) || 
                     content.includes("Terminal online") || 
                     content.includes("Awaiting input")) {
                     return;
@@ -889,7 +889,7 @@ class RetroTerminal {
         this.chatOutput.innerHTML = '';
         
         // Add welcome message
-        this.addMessage('bot', "Hello! I'm GEMINI. How can I assist you today?");
+        this.addMessage('bot', `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?`);
         
         // Reset input field
         this.userInput.value = '';
@@ -994,6 +994,10 @@ class RetroTerminal {
         // Add settings fields
         settingsContent.innerHTML = `
             <div class="setting-item">
+                <label for="setting-bot-name">Bot Name:</label>
+                <input type="text" id="setting-bot-name">
+            </div>
+            <div class="setting-item">
                 <label for="setting-system-prompt">System Prompt:</label>
                 <textarea id="setting-system-prompt" rows="8"></textarea>
             </div>
@@ -1048,6 +1052,7 @@ class RetroTerminal {
                 historyPanel.style.display = 'none';
             }
             // Populate with current settings
+            document.getElementById('setting-bot-name').value = CONFIG.BOT_NAME || 'Syntra';
             document.getElementById('setting-system-prompt').value = CONFIG.SYSTEM_PROMPT || '';
             document.getElementById('setting-temperature').value = CONFIG.TEMPERATURE || 1.0;
             document.getElementById('setting-top-k').value = CONFIG.TOP_K || 40;
@@ -1062,6 +1067,7 @@ class RetroTerminal {
     // NEW: Save Settings
     saveSettings() {
         try {
+            const newBotName = document.getElementById('setting-bot-name').value.trim();
             const newPrompt = document.getElementById('setting-system-prompt').value;
             const newTemp = parseFloat(document.getElementById('setting-temperature').value);
             const newTopK = parseInt(document.getElementById('setting-top-k').value, 10);
@@ -1069,6 +1075,10 @@ class RetroTerminal {
             const newModel = document.getElementById('setting-model').value.trim();
 
             // Basic validation
+            if (!newBotName) {
+                alert("Bot name cannot be empty.");
+                return;
+            }
             if (isNaN(newTemp) || newTemp < 0 || newTemp > 2.0) {
                 alert("Invalid Temperature value. Must be between 0.0 and 2.0.");
                 return;
@@ -1077,31 +1087,37 @@ class RetroTerminal {
                 alert("Invalid Top K value. Must be 1 or greater.");
                 return;
             }
-             if (isNaN(newTopP) || newTopP < 0 || newTopP > 1.0) {
+            if (isNaN(newTopP) || newTopP < 0 || newTopP > 1.0) {
                 alert("Invalid Top P value. Must be between 0.0 and 1.0.");
                 return;
             }
             if (!newModel) {
-                 alert("Model name cannot be empty.");
+                alert("Model name cannot be empty.");
                 return;
             }
 
-
             // Update the global CONFIG object
+            CONFIG.BOT_NAME = newBotName;
             CONFIG.SYSTEM_PROMPT = newPrompt;
             CONFIG.TEMPERATURE = newTemp;
             CONFIG.TOP_K = newTopK;
             CONFIG.TOP_P = newTopP;
             CONFIG.MODEL = newModel;
 
-            // Optionally: Notify the API handler if it needs explicit updates
-            if (window.geminiAPI && typeof window.geminiAPI.updateSettings === 'function') {
-                 window.geminiAPI.updateSettings(CONFIG);
-                 console.log("Gemini API settings updated.");
+            // Save to localStorage
+            if (typeof saveConfigToStorage === 'function') {
+                saveConfigToStorage();
             } else {
-                 console.log("Global CONFIG updated. API will use new settings on next call.");
+                localStorage.setItem('geminiConfig', JSON.stringify(CONFIG));
             }
 
+            // Optionally: Notify the API handler if it needs explicit updates
+            if (window.geminiAPI && typeof window.geminiAPI.updateSettings === 'function') {
+                window.geminiAPI.updateSettings(CONFIG);
+                console.log("Gemini API settings updated.");
+            } else {
+                console.log("Global CONFIG updated. API will use new settings on next call.");
+            }
 
             document.getElementById('status-message').textContent = "SETTINGS SAVED";
             setTimeout(() => {
