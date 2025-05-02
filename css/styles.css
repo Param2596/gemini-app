@@ -129,47 +129,61 @@ html, body {
 #terminal-controls {
     display: flex;
     align-items: center;
-    gap: 5px; /* Reduced gap */
+    gap: 8px; /* Consistent spacing between elements */
 }
 
-#theme-selector {
-    background-color: var(--input-bg);
+/* Common style for all header buttons and selectors */
+.header-button, #theme-selector {
+    background-color: var(--background-color);
     color: var(--text-color);
     border: 1px solid var(--border-color);
-    padding: 5px 10px;
+    padding: 4px 8px;
     font-family: inherit;
-    font-size: 14px;
-    border-radius: 0;
+    font-size: 12px;
     cursor: pointer;
+    text-transform: uppercase;
+    height: 28px; /* Fixed height for all elements */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Hover state for all header controls */
+.header-button:hover, #theme-selector:hover {
+    background-color: var(--text-color);
+    color: var(--background-color);
+}
+
+/* Theme selector specific overrides */
+#theme-selector {
     outline: none;
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    position: relative;
-    text-transform: uppercase;
+    padding-right: 20px; /* Space for the dropdown arrow */
 }
 
-#theme-selector:focus {
-    border-color: var(--text-color);
-    box-shadow: 0 0 5px var(--glow-color);
-}
-
-/* Custom dropdown arrow */
+/* Custom dropdown arrow container position */
 .select-wrapper {
     position: relative;
     display: inline-block;
-    margin-left: 5px; /* Space before theme selector */
 }
 
+/* Custom dropdown arrow */
 .select-wrapper::after {
     content: "▼";
-    font-size: 12px;
+    font-size: 10px;
     color: var(--text-color);
     position: absolute;
-    right: 10px;
+    right: 8px;
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
+}
+
+/* When theme selector is hovered, arrow should change color */
+.select-wrapper:hover::after {
+    color: var(--background-color);
 }
 
 /* Main chat layout */
@@ -577,7 +591,7 @@ th {
 
 .terminal-button:hover {
     background-color: var(--text-color);
-    color: var(--background-color);
+    color: var (--background-color);
 }
 
 /* History panel styles */
@@ -708,22 +722,6 @@ th {
     background: none;
     border: none;
     color: inherit;
-}
-
-/* Style for header buttons */
-#new-chat-button-header, #history-button {
-    background-color: var(--background-color);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    padding: 4px 8px;
-    margin-right: 10px;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-#new-chat-button-header:hover, #history-button:hover {
-    background-color: var(--text-color);
-    color: var(--background-color);
 }
 
 /* File upload styling */

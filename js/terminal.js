@@ -107,7 +107,7 @@ class RetroTerminal {
         // Add NEW CHAT button
         const newChatButton = document.createElement('button');
         newChatButton.id = 'new-chat-button-header';
-        newChatButton.className = 'terminal-button header-button';
+        newChatButton.className = 'header-button'; // Simplified class name
         newChatButton.textContent = 'NEW CHAT';
         newChatButton.onclick = () => this.startNewChat();
         controlsDiv.appendChild(newChatButton);
@@ -115,7 +115,7 @@ class RetroTerminal {
         // Add HISTORY button
         const historyButton = document.createElement('button');
         historyButton.id = 'history-button';
-        historyButton.className = 'terminal-button header-button';
+        historyButton.className = 'header-button'; // Simplified class name
         historyButton.textContent = 'HISTORY';
         historyButton.onclick = () => this.toggleHistoryPanel();
         controlsDiv.appendChild(historyButton);
@@ -123,7 +123,7 @@ class RetroTerminal {
         // Add SETTINGS button
         const settingsButton = document.createElement('button');
         settingsButton.id = 'settings-button';
-        settingsButton.className = 'terminal-button header-button';
+        settingsButton.className = 'header-button'; // Simplified class name
         settingsButton.textContent = 'SETTINGS';
         settingsButton.onclick = () => this.toggleSettingsPanel();
         controlsDiv.appendChild(settingsButton);
