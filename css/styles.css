@@ -947,6 +947,7 @@ th {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    font-size: 16px;
 }
 
 .setting-item {
@@ -1139,7 +1140,7 @@ th {
 
 .history-item {
     padding: 10px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var (--border-color);
     cursor: default; /* Change cursor if items aren't clickable directly */
 }
 
@@ -1246,4 +1247,141 @@ th {
     .setting-item textarea {
         font-size: 13px;
     }
+}
+
+/* Persona Management Styles */
+.personas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.persona-item {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    position: relative;
+}
+
+.persona-item.active {
+    border-color: var(--text-color);
+    box-shadow: 0 0 5px var(--glow-color);
+}
+
+.persona-item.active::before {
+    content: "ACTIVE";
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 12px;
+    color: var(--text-color);
+}
+
+.persona-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+    padding-right: 70px; /* Space for ACTIVE label */
+}
+
+.persona-description {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.persona-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.persona-button {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 3px 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.persona-button:hover {
+    background-color: var(--text-color);
+    color: var(--background-color);
+}
+
+.delete-persona {
+    color: #FF5555;
+    border-color: #FF5555;
+}
+
+.delete-persona:hover {
+    background-color: #FF5555;
+    color: var(--background-color);
+}
+
+.add-persona-button {
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+/* Persona Edit Form */
+.persona-form {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    margin-top: 15px;
+    display: none;
+}
+
+.persona-form.visible {
+    display: block;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.form-buttons .terminal-button {
+    flex: 1;
+}
+
+/* Settings Tab Navigation */
+.settings-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 15px;
+}
+
+.settings-tab {
+    padding: 8px 15px;
+    cursor: pointer;
+    opacity: 0.7;
+    background-color: var(--background-color);
+    border: 1px solid transparent;
+    border-bottom: none;
+    margin-right: 5px;
+}
+
+.settings-tab.active {
+    opacity: 1;
+    border-color: var(--border-color);
+    border-bottom-color: var(--background-color);
+    position: relative;
+    top: 1px;
+}
+
+.settings-tab-content {
+    display: none;
+}
+
+.settings-tab-content.active {
+    display: block;
 }

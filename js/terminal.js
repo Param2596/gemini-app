@@ -11,6 +11,8 @@ class RetroTerminal {
         this.lastTypingCancellation = null;
         this.currentConversationId = Date.now().toString();
         this.attachedFiles = [];
+
+
         
         // Update Remarkable initialization
         try {
@@ -932,6 +934,7 @@ class RetroTerminal {
 
     // Update startNewChat to save current conversation first
 
+    
     startNewChat() {
         // Save current chat before starting new one
         this.saveCurrentChat();
@@ -951,7 +954,7 @@ class RetroTerminal {
         const timeSinceLastChat = this.getTimeSinceLastConversation();
         const currentDateTime = new Date().toLocaleString();
         
-        // Create welcome message with time info
+        // Create welcome message with time info and use current persona name
         let welcomeMessage = `Hello! I'm ${CONFIG.BOT_NAME}. I'm here to assist you.`;
         
         if (timeSinceLastChat) {
@@ -1068,29 +1071,54 @@ class RetroTerminal {
 
         // Add settings fields
         settingsContent.innerHTML = `
-            <div class="setting-item">
-                <label for="setting-bot-name">Bot Name:</label>
-                <input type="text" id="setting-bot-name">
+            <div class="settings-tabs">
+                <div class="settings-tab active" data-tab="general-settings">GENERAL</div>
+                <div class="settings-tab" data-tab="personas-settings">PERSONAS</div>
             </div>
-            <div class="setting-item">
-                <label for="setting-system-prompt">System Prompt:</label>
-                <textarea id="setting-system-prompt" rows="8"></textarea>
+            
+            <div id="general-settings" class="settings-tab-content active">
+                <div class="setting-item">
+                    <label for="setting-temperature">Temperature:</label>
+                    <input type="number" id="setting-temperature" step="0.1" min="0" max="2.0">
+                </div>
+                <div class="setting-item">
+                    <label for="setting-top-k">Top K:</label>
+                    <input type="number" id="setting-top-k" step="1" min="1">
+                </div>
+                <div class="setting-item">
+                    <label for="setting-top-p">Top P:</label>
+                    <input type="number" id="setting-top-p" step="0.05" min="0" max="1">
+                </div>
+                <div class="setting-item">
+                    <label for="setting-model">Model:</label>
+                    <input type="text" id="setting-model">
+                </div>
             </div>
-            <div class="setting-item">
-                <label for="setting-temperature">Temperature:</label>
-                <input type="number" id="setting-temperature" step="0.1" min="0" max="2.0">
-            </div>
-            <div class="setting-item">
-                <label for="setting-top-k">Top K:</label>
-                <input type="number" id="setting-top-k" step="1" min="1">
-            </div>
-            <div class="setting-item">
-                <label for="setting-top-p">Top P:</label>
-                <input type="number" id="setting-top-p" step="0.05" min="0" max="1">
-            </div>
-             <div class="setting-item">
-                <label for="setting-model">Model:</label>
-                <input type="text" id="setting-model">
+            
+            <div id="personas-settings" class="settings-tab-content">
+                <div id="personas-list" class="personas-list">
+                    <!-- Personas will be added here dynamically -->
+                </div>
+                
+                <button id="add-persona-button" class="terminal-button add-persona-button">ADD NEW PERSONA</button>
+                
+                <div class="persona-form">
+                    <form id="persona-form">
+                        <input type="hidden" id="persona-id">
+                        <div class="setting-item">
+                            <label for="persona-name">Persona Name:</label>
+                            <input type="text" id="persona-name" placeholder="Enter name">
+                        </div>
+                        <div class="setting-item">
+                            <label for="persona-prompt">System Prompt:</label>
+                            <textarea id="persona-prompt" rows="8" placeholder="Enter system prompt for this persona"></textarea>
+                        </div>
+                        <div class="form-buttons">
+                            <button type="button" id="save-persona-button" class="terminal-button">SAVE</button>
+                            <button type="button" id="cancel-persona-button" class="terminal-button">CANCEL</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         `;
 
@@ -1115,6 +1143,24 @@ class RetroTerminal {
          settingsHeader.querySelector('.close-panel-button').addEventListener('click', (e) => {
             this.toggleSettingsPanel(); // Use the toggle function
         });
+
+        // Add listeners for persona management
+        this.initializePersonaManagement();
+        
+        // Add listeners for persona buttons
+        document.getElementById('add-persona-button').addEventListener('click', () => {
+            this.createNewPersona();
+        });
+        
+        document.getElementById('save-persona-button').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.savePersonaForm();
+        });
+        
+        document.getElementById('cancel-persona-button').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.cancelPersonaForm();
+        });
     }
 
     // NEW: Toggle Settings Panel
@@ -1127,12 +1173,14 @@ class RetroTerminal {
                 historyPanel.style.display = 'none';
             }
             // Populate with current settings
-            document.getElementById('setting-bot-name').value = CONFIG.BOT_NAME || 'Syntra';
-            document.getElementById('setting-system-prompt').value = CONFIG.SYSTEM_PROMPT || '';
             document.getElementById('setting-temperature').value = CONFIG.TEMPERATURE || 1.0;
             document.getElementById('setting-top-k').value = CONFIG.TOP_K || 40;
             document.getElementById('setting-top-p').value = CONFIG.TOP_P || 0.95;
-            document.getElementById('setting-model').value = CONFIG.MODEL || 'gemini-1.5-flash'; // Default if not set
+            document.getElementById('setting-model').value = CONFIG.MODEL || 'gemini-1.5-flash';
+            
+            // Display personas
+            this.displayPersonas();
+            
             panel.style.display = 'flex';
         } else {
             panel.style.display = 'none';
@@ -1142,18 +1190,12 @@ class RetroTerminal {
     // NEW: Save Settings
     saveSettings() {
         try {
-            const newBotName = document.getElementById('setting-bot-name').value.trim();
-            const newPrompt = document.getElementById('setting-system-prompt').value;
             const newTemp = parseFloat(document.getElementById('setting-temperature').value);
             const newTopK = parseInt(document.getElementById('setting-top-k').value, 10);
             const newTopP = parseFloat(document.getElementById('setting-top-p').value);
             const newModel = document.getElementById('setting-model').value.trim();
 
             // Basic validation
-            if (!newBotName) {
-                alert("Bot name cannot be empty.");
-                return;
-            }
             if (isNaN(newTemp) || newTemp < 0 || newTemp > 2.0) {
                 alert("Invalid Temperature value. Must be between 0.0 and 2.0.");
                 return;
@@ -1172,8 +1214,6 @@ class RetroTerminal {
             }
 
             // Update the global CONFIG object
-            CONFIG.BOT_NAME = newBotName;
-            CONFIG.SYSTEM_PROMPT = newPrompt;
             CONFIG.TEMPERATURE = newTemp;
             CONFIG.TOP_K = newTopK;
             CONFIG.TOP_P = newTopP;
@@ -1206,6 +1246,280 @@ class RetroTerminal {
             this.addMessage('error', 'Failed to save settings. Check console.');
             document.getElementById('status-message').textContent = "SAVE FAILED";
         }
+    }
+
+    // Add this to the RetroTerminal class
+
+    // Add this after the initializeSettingsPanel() method
+    initializePersonaManagement() {
+        // Ensure we have the default persona in storage
+        this.loadPersonas();
+        
+        // Add event listeners for switching tabs in settings panel
+        document.addEventListener('click', e => {
+            if (e.target.classList.contains('settings-tab')) {
+                // Get all tabs and content, remove active class
+                const tabs = document.querySelectorAll('.settings-tab');
+                const tabContents = document.querySelectorAll('.settings-tab-content');
+                
+                tabs.forEach(tab => tab.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                e.target.classList.add('active');
+                const tabId = e.target.dataset.tab;
+                document.getElementById(tabId).classList.add('active');
+            }
+        });
+    }
+
+    // Load personas from storage
+    loadPersonas() {
+        let personas = JSON.parse(localStorage.getItem('geminiPersonas') || '[]');
+        
+        // If no personas stored, initialize with default Syntra persona
+        if (personas.length === 0) {
+            const defaultPersona = {
+                id: 'default',
+                name: CONFIG.BOT_NAME || 'Syntra',
+                systemPrompt: CONFIG.SYSTEM_PROMPT || '',
+                default: true,
+                active: true
+            };
+            personas = [defaultPersona];
+            localStorage.setItem('geminiPersonas', JSON.stringify(personas));
+        }
+        
+        return personas;
+    }
+
+    // Save personas to storage
+    savePersonas(personas) {
+        localStorage.setItem('geminiPersonas', JSON.stringify(personas));
+    }
+
+    // Display personas in settings panel
+    displayPersonas() {
+        const personas = this.loadPersonas();
+        const personasList = document.getElementById('personas-list');
+        
+        if (!personasList) return;
+        
+        personasList.innerHTML = '';
+        
+        personas.forEach(persona => {
+            const personaItem = document.createElement('div');
+            personaItem.className = `persona-item ${persona.active ? 'active' : ''}`;
+            
+            const description = persona.systemPrompt.length > 50 
+                ? persona.systemPrompt.substring(0, 50) + '...' 
+                : persona.systemPrompt;
+            
+            personaItem.innerHTML = `
+                <div class="persona-name">${persona.name}</div>
+                <div class="persona-description">${description}</div>
+                <div class="persona-actions">
+                    <button class="persona-button select-persona" data-id="${persona.id}">SELECT</button>
+                    <button class="persona-button edit-persona" data-id="${persona.id}">EDIT</button>
+                    ${!persona.default ? `<button class="persona-button delete-persona" data-id="${persona.id}">DELETE</button>` : ''}
+                </div>
+            `;
+            
+            personasList.appendChild(personaItem);
+        });
+        
+        // Add event listeners
+        document.querySelectorAll('.select-persona').forEach(button => {
+            button.addEventListener('click', e => {
+                const personaId = e.target.dataset.id;
+                this.activatePersona(personaId);
+            });
+        });
+        
+        document.querySelectorAll('.edit-persona').forEach(button => {
+            button.addEventListener('click', e => {
+                const personaId = e.target.dataset.id;
+                this.editPersona(personaId);
+            });
+        });
+        
+        document.querySelectorAll('.delete-persona').forEach(button => {
+            button.addEventListener('click', e => {
+                const personaId = e.target.dataset.id;
+                this.deletePersona(personaId);
+            });
+        });
+    }
+
+    // Activate a persona
+    activatePersona(personaId) {
+        const personas = this.loadPersonas();
+        
+        // Update active state
+        personas.forEach(persona => {
+            persona.active = (persona.id === personaId);
+            
+            // If this is the new active persona, update CONFIG
+            if (persona.active) {
+                CONFIG.BOT_NAME = persona.name;
+                CONFIG.SYSTEM_PROMPT = persona.systemPrompt;
+                
+                // Update API settings if available
+                if (window.geminiAPI && typeof window.geminiAPI.updateSettings === 'function') {
+                    window.geminiAPI.updateSettings(CONFIG);
+                    console.log(`Persona switched to: ${persona.name}`);
+                }
+            }
+        });
+        
+        // Save updated personas
+        this.savePersonas(personas);
+        
+        // Update display
+        this.displayPersonas();
+        
+        // Show confirmation
+        document.getElementById('status-message').textContent = `PERSONA: ${CONFIG.BOT_NAME}`;
+        setTimeout(() => {
+            document.getElementById('status-message').textContent = "READY";
+        }, 2000);
+    }
+
+    // Edit a persona
+    editPersona(personaId) {
+        const personas = this.loadPersonas();
+        const persona = personas.find(p => p.id === personaId);
+        
+        if (!persona) return;
+        
+        // Populate form
+        document.getElementById('persona-id').value = persona.id;
+        document.getElementById('persona-name').value = persona.name;
+        document.getElementById('persona-prompt').value = persona.systemPrompt;
+        
+        // Show form
+        document.querySelector('.persona-form').classList.add('visible');
+        
+        // Scroll to form
+        document.querySelector('.persona-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Delete a persona
+    deletePersona(personaId) {
+        // Ask for confirmation
+        const confirmation = confirm("Are you sure you want to delete this persona?");
+        if (!confirmation) return;
+        
+        let personas = this.loadPersonas();
+        
+        // Check if trying to delete active persona
+        const activePersona = personas.find(p => p.id === personaId && p.active);
+        
+        if (activePersona) {
+            alert("Cannot delete the currently active persona. Please select another persona first.");
+            return;
+        }
+        
+        // Remove the persona
+        personas = personas.filter(p => p.id !== personaId);
+        
+        // Save updated personas
+        this.savePersonas(personas);
+        
+        // Update display
+        this.displayPersonas();
+        
+        // Show confirmation
+        document.getElementById('status-message').textContent = "PERSONA DELETED";
+        setTimeout(() => {
+            document.getElementById('status-message').textContent = "READY";
+        }, 2000);
+    }
+
+    // Save persona from form
+    savePersonaForm() {
+        const personaId = document.getElementById('persona-id').value;
+        const name = document.getElementById('persona-name').value.trim();
+        const systemPrompt = document.getElementById('persona-prompt').value.trim();
+        
+        // Validate
+        if (!name) {
+            alert("Persona name cannot be empty.");
+            return;
+        }
+        
+        const personas = this.loadPersonas();
+        
+        if (personaId) {
+            // Edit existing persona
+            const personaIndex = personas.findIndex(p => p.id === personaId);
+            
+            if (personaIndex !== -1) {
+                // Update persona
+                personas[personaIndex].name = name;
+                personas[personaIndex].systemPrompt = systemPrompt;
+                
+                // Update CONFIG if this is the active persona
+                if (personas[personaIndex].active) {
+                    CONFIG.BOT_NAME = name;
+                    CONFIG.SYSTEM_PROMPT = systemPrompt;
+                    saveConfigToStorage();
+                    
+                    // Update API settings if available
+                    if (window.geminiAPI && typeof window.geminiAPI.updateSettings === 'function') {
+                        window.geminiAPI.updateSettings(CONFIG);
+                    }
+                }
+            }
+        } else {
+            // Create new persona
+            const newPersona = {
+                id: Date.now().toString(),
+                name: name,
+                systemPrompt: systemPrompt,
+                default: false,
+                active: false
+            };
+            
+            personas.push(newPersona);
+        }
+        
+        // Save updated personas
+        this.savePersonas(personas);
+        
+        // Hide form and reset
+        document.querySelector('.persona-form').classList.remove('visible');
+        document.getElementById('persona-form').reset();
+        document.getElementById('persona-id').value = '';
+        
+        // Update display
+        this.displayPersonas();
+        
+        // Show confirmation
+        document.getElementById('status-message').textContent = "PERSONA SAVED";
+        setTimeout(() => {
+            document.getElementById('status-message').textContent = "READY";
+        }, 2000);
+    }
+
+    // Create a new persona
+    createNewPersona() {
+        // Reset form
+        document.getElementById('persona-form').reset();
+        document.getElementById('persona-id').value = '';
+        
+        // Show form
+        document.querySelector('.persona-form').classList.add('visible');
+        
+        // Scroll to form
+        document.querySelector('.persona-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Cancel form edit
+    cancelPersonaForm() {
+        document.querySelector('.persona-form').classList.remove('visible');
+        document.getElementById('persona-form').reset();
+        document.getElementById('persona-id').value = '';
     }
 
     // Add this helper method to remove all cursors from the chat
