@@ -64,6 +64,40 @@ class RetroTerminal {
         setInterval(() => this.saveCurrentChat(), 60000);
     }
 
+    // New method to save last conversation timestamp
+    saveLastConversationTimestamp() {
+        localStorage.setItem('lastConversationTime', new Date().toISOString());
+    }
+
+    // New method to get time elapsed since last conversation
+    getTimeSinceLastConversation() {
+        const lastTime = localStorage.getItem('lastConversationTime');
+        if (!lastTime) return null;
+        
+        const lastDate = new Date(lastTime);
+        const currentDate = new Date();
+        const diffMs = currentDate - lastDate;
+        
+        // Calculate time differences
+        const seconds = Math.floor(diffMs / 1000);
+        if (seconds < 60) return `${seconds} seconds`;
+        
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''}`;
+        
+        const days = Math.floor(hours / 24);
+        if (days < 30) return `${days} day${days !== 1 ? 's' : ''}`;
+        
+        const months = Math.floor(days / 30);
+        if (months < 12) return `${months} month${months !== 1 ? 's' : ''}`;
+        
+        const years = Math.floor(months / 12);
+        return `${years} year${years !== 1 ? 's' : ''}`;
+    }
+
     // Initialize event listeners
     initializeEventListeners() {
         // Load saved theme if available
@@ -397,8 +431,12 @@ class RetroTerminal {
             .replace(/'/g, "&#039;");
     }
 
-    // Send message to API
+    // Modified sendMessage method to track conversation time
     async sendMessage() {
+        // Add this at the beginning of the method
+        const isFirstMessage = this.chatOutput.querySelectorAll('.user-message').length === 0;
+        
+        // Rest of the existing code...
         const message = this.userInput.value.trim();
         
         // Allow sending just files without text
@@ -438,7 +476,23 @@ class RetroTerminal {
             
             let response;
             
-            // If we have files, process them
+            // If this is the first message of the conversation, add time context
+            if (isFirstMessage) {
+                // Get time since last conversation
+                const timeSinceLastChat = this.getTimeSinceLastConversation();
+                const currentDateTime = new Date().toLocaleString();
+                
+                // Create a context message to send to the API
+                let contextMessage = `Current date and time: ${currentDateTime}.`;
+                if (timeSinceLastChat) {
+                    contextMessage += ` It has been ${timeSinceLastChat} since our last conversation.`;
+                }
+                
+                // Send the context message to the API first
+                await window.geminiAPI.sendMessage(contextMessage, true); // true means don't display this message
+            }
+            
+            // Continue with existing file handling and API calls
             if (this.attachedFiles.length > 0) {
                 // Convert files to appropriate format
                 const filePromises = this.attachedFiles.map(file => {
@@ -482,6 +536,9 @@ class RetroTerminal {
             if (response) { // Check if response exists (might not if only files were sent and API doesn't return text)
                 this.addMessage('bot', response);
             }
+            
+            // Save the timestamp of this conversation
+            this.saveLastConversationTimestamp();
         } catch (error) {
             console.error('Error sending message:', error);
             // Remove any loading message
@@ -920,8 +977,24 @@ class RetroTerminal {
         // Clear chat
         this.chatOutput.innerHTML = '';
         
+        // Get time context
+        const timeSinceLastChat = this.getTimeSinceLastConversation();
+        const currentDateTime = new Date().toLocaleString();
+        
+        // Create welcome message with time info
+        let welcomeMessage = `Hello! I'm ${CONFIG.BOT_NAME}. I'm here to assist you.`;
+        
+        if (timeSinceLastChat) {
+            welcomeMessage += ` `;
+        }
+        
+        welcomeMessage += " How can I assist you today?";
+        
         // Add welcome message with cursor
-        this.addMessage('bot', `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?`);
+        this.addMessage('bot', welcomeMessage);
+        
+        // Save this as the last conversation time
+        this.saveLastConversationTimestamp();
         
         // Reset input field
         this.userInput.value = '';
