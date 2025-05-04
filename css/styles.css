@@ -139,7 +139,7 @@ html, body {
     border: 1px solid var(--border-color);
     padding: 4px 8px;
     font-family: inherit;
-    font-size: 12px;
+    font-size: 16px;
     cursor: pointer;
     text-transform: uppercase;
     height: 28px; /* Fixed height for all elements */
@@ -940,8 +940,8 @@ th {
 
 .setting-item label {
     margin-bottom: 5px;
-    font-weight: bold;
-    opacity: 0.8;
+    /* font-weight: bold; */
+    /* opacity: 0.8; */
 }
 
 .setting-item input[type="text"],
@@ -1149,8 +1149,8 @@ th {
 
 .setting-item label {
     margin-bottom: 5px;
-    font-weight: bold;
-    opacity: 0.8;
+    /* font-weight: bold; */
+    opacity: 0.9;
 }
 
 .setting-item input[type="text"],
@@ -1191,7 +1191,7 @@ th {
 
 .header-button {
     padding: 4px 8px; /* Smaller padding for header buttons */
-    font-size: 12px; /* Smaller font size */
+    font-size: 16px; /* Smaller font size */
 }
 
 /* Ensure select wrapper aligns well */
