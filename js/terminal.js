@@ -347,13 +347,16 @@ class RetroTerminal {
                 const cursors = messageContentDiv.querySelectorAll('.typing-cursor');
                 cursors.forEach(c => c.remove());
 
-                // Add separator and action buttons (logic remains the same)
-                if (!content.includes('BIOS') /* ... other conditions ... */ && !content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
-                     messageDiv.insertBefore(separator, actionsDiv);
+                // Only add separator and buttons for normal bot messages
+                if (!content.includes('BIOS') && !content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
+                    // Add message separator
+                    const separator = document.createElement('div');
+                    separator.className = 'message-separator';
+                    messageDiv.appendChild(separator);
+                    
+                    // Add actions div with buttons
+                    messageDiv.appendChild(actionsDiv);
                 }
-                 if (!actionsDiv.parentNode) {
-                     messageDiv.appendChild(actionsDiv);
-                 }
 
                 // Scroll to ensure everything is visible
                 this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
