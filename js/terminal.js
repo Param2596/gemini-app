@@ -12,8 +12,6 @@ class RetroTerminal {
         this.currentConversationId = Date.now().toString();
         this.attachedFiles = [];
 
-
-        
         // Update Remarkable initialization
         try {
             this.md = new Remarkable('full', {
@@ -41,27 +39,30 @@ class RetroTerminal {
             this.md = null;
         }
 
-        // Add custom rules for terminal-specific elements
-        this.md.use((remarkable) => {
-            const defaultRender = remarkable.renderer.code;
-            remarkable.renderer.code = function (code, lang) {
-                // Add copy button container
-                const html = defaultRender.call(remarkable.renderer, code, lang);
-                return `<div class="code-block-container">${html}</div>`;
-            };
-        });
+        // REMOVE OR COMMENT OUT THIS ENTIRE BLOCK:
+        // this.md.use((remarkable) => {
+        //     const defaultFenceRender = remarkable.renderer.rules.fence;
+        //     remarkable.renderer.rules.fence = (tokens, idx, options, env, slf) => {
+        //         const originalHtml = defaultFenceRender(tokens, idx, options, env, slf);
+        //         if (originalHtml && originalHtml.trim() !== '') {
+        //              return `<div class="code-block-container"><button class="copy-button">COPY</button>${originalHtml}</div>`;
+        //         }
+        //         return originalHtml;
+        //     };
+        // });
+        // END OF BLOCK TO REMOVE/COMMENT OUT
 
         this.initializeEventListeners();
         this.initializeHeaderControls(); // Changed from initializeTerminal
         this.initializeHistoryPanel(); // Renamed for clarity
         this.initializeSettingsPanel(); // Add this line
         this.initializeFileUpload();
-        
+
         // Auto-save chat when window is closed
         window.addEventListener('beforeunload', () => {
             this.saveCurrentChat();
         });
-        
+
         // Auto-save chat periodically
         setInterval(() => this.saveCurrentChat(), 60000);
     }
@@ -75,27 +76,27 @@ class RetroTerminal {
     getTimeSinceLastConversation() {
         const lastTime = localStorage.getItem('lastConversationTime');
         if (!lastTime) return null;
-        
+
         const lastDate = new Date(lastTime);
         const currentDate = new Date();
         const diffMs = currentDate - lastDate;
-        
+
         // Calculate time differences
         const seconds = Math.floor(diffMs / 1000);
         if (seconds < 60) return `${seconds} seconds`;
-        
+
         const minutes = Math.floor(seconds / 60);
         if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-        
+
         const hours = Math.floor(minutes / 60);
         if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''}`;
-        
+
         const days = Math.floor(hours / 24);
         if (days < 30) return `${days} day${days !== 1 ? 's' : ''}`;
-        
+
         const months = Math.floor(days / 30);
         if (months < 12) return `${months} month${months !== 1 ? 's' : ''}`;
-        
+
         const years = Math.floor(months / 12);
         return `${years} year${years !== 1 ? 's' : ''}`;
     }
@@ -193,15 +194,15 @@ class RetroTerminal {
             document.getElementById('status-message').textContent = "API ERROR";
             return;
         }
-        
+
         // Play boot sound if available
         if (this.bootSound && this.bootSound.play) {
             this.bootSound.play().catch(e => console.log('Audio playback error:', e));
         }
-        
+
         // Clear chat and show boot sequence
         this.chatOutput.innerHTML = '';
-        
+
         // CHANGE: Create a single combined boot message
         const bootSteps = [
             "BIOS v3.2.1 - Initializing memory...",
@@ -215,19 +216,19 @@ class RetroTerminal {
             "Loading knowledge base...",
             `${CONFIG.BOT_NAME} AI ready for interaction.`
         ];
-        
+
         // Create a single message with all boot steps
         const bootContent = bootSteps.join('\n');
-        
+
         // Create boot message element directly (bypassing addMessage)
         const bootMessageDiv = document.createElement('div');
         bootMessageDiv.className = 'message bot-message boot-message';
         bootMessageDiv.innerHTML = `<pre class="boot-text">${bootContent}</pre>`;
         this.chatOutput.appendChild(bootMessageDiv);
-        
+
         let delay = 150;
         let currentStepIndex = 0;
-        
+
         // Display boot sequence one step at a time
         const bootInterval = setInterval(() => {
             if (currentStepIndex < bootSteps.length) {
@@ -238,7 +239,7 @@ class RetroTerminal {
             } else {
                 // Boot sequence complete
                 clearInterval(bootInterval);
-                
+
                 // Add welcome message as a separate message with cursor
                 setTimeout(() => {
                     // Create welcome message element directly
@@ -246,7 +247,7 @@ class RetroTerminal {
                     welcomeMsg.className = 'message bot-message';
                     welcomeMsg.innerHTML = `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?<span class="typing-cursor"></span>`;
                     this.chatOutput.appendChild(welcomeMsg);
-                    
+
                     document.getElementById('user-input').disabled = false;
                     document.getElementById('send-button').disabled = false;
                     document.getElementById('status-message').textContent = "READY";
@@ -254,7 +255,7 @@ class RetroTerminal {
                 }, delay);
             }
         }, delay);
-        
+
         // Disable input during boot sequence
         document.getElementById('user-input').disabled = true;
         document.getElementById('send-button').disabled = true;
@@ -264,7 +265,7 @@ class RetroTerminal {
     // Add a message to the chat
     addMessage(type, content) {
         // Remove the separator code from here (we'll add it after typing completes)
-        
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}-message`;
 
@@ -281,47 +282,78 @@ class RetroTerminal {
             // Bot message container
             const messageContentDiv = document.createElement('div');
             messageContentDiv.className = 'message-content';
-            messageContentDiv.innerHTML = this.renderMarkdown(content);
-            
-            // Initialize code blocks
-            this.initializeCodeBlock(messageContentDiv);
-            
+            // --- RENDER MARKDOWN ONCE ---
+            const renderedHtml = this.renderMarkdown(content); // Render full HTML here
+
             // Create separator (but don't add it yet)
             const separator = document.createElement('div');
             separator.className = 'message-separator';
-            
+
             // Add message actions
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'message-actions';
-            
-            // Copy button
+
+            // Copy button (copies original plain text)
             const copyButton = document.createElement('button');
             copyButton.className = 'message-action-button';
             copyButton.textContent = 'COPY';
-            copyButton.onclick = () => this.copyToClipboard(content);
-            
+            copyButton.onclick = () => this.copyToClipboard(content); // Copy original text
+
             // Regenerate button
             const regenerateButton = document.createElement('button');
             regenerateButton.className = 'message-action-button';
             regenerateButton.textContent = 'REGENERATE';
             regenerateButton.onclick = () => this.regenerateResponse();
-            
+
             // Add buttons to actions
             actionsDiv.appendChild(copyButton);
             actionsDiv.appendChild(regenerateButton);
-            
+
             // Append content div to message
             messageDiv.appendChild(messageContentDiv);
-            
+
             // Add to chat
             this.chatOutput.appendChild(messageDiv);
             this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
-            
-            // Start typing animation and add separator + buttons when complete
-            this.typeText(messageContentDiv, content).then(() => {
+
+            // --- Start typing animation with PLAIN TEXT, then replace and wrap ---
+            this.typeTextPlain(messageContentDiv, content).then(() => { // Use a new typing function
+                // --- Replace placeholder text with fully rendered HTML ---
+                messageContentDiv.innerHTML = renderedHtml;
+
+                // --- Wrap code blocks using DOM manipulation AFTER full render ---
+                const preElements = messageContentDiv.querySelectorAll('pre');
+                preElements.forEach(preElement => {
+                    // Check if it's not already wrapped
+                    if (!preElement.closest('.code-block-container')) { // Simpler check
+                        const container = document.createElement('div');
+                        container.className = 'code-block-container';
+
+                        const copyCodeButton = document.createElement('button');
+                        copyCodeButton.className = 'copy-button'; // Use the CSS class for the button
+                        copyCodeButton.textContent = 'COPY'; // Keep text consistent
+                        const codeElement = preElement.querySelector('code');
+                        const codeToCopy = codeElement ? codeElement.textContent : preElement.textContent;
+                        copyCodeButton.onclick = (e) => {
+                            e.stopPropagation(); // Prevent triggering other clicks
+                            this.copyToClipboard(codeToCopy);
+                        };
+
+                        // Wrap: insert container before pre, add button, move pre inside
+                        preElement.parentNode.insertBefore(container, preElement);
+                        container.appendChild(copyCodeButton);
+                        container.appendChild(preElement); // Move pre inside container
+                    }
+                });
+                // --- End Wrap ---
+
+                // Remove any leftover typing cursors from the plain text typing
+                const cursors = messageContentDiv.querySelectorAll('.typing-cursor');
+                cursors.forEach(c => c.remove());
+
                 // Don't add separator for boot/welcome messages
-                if (!content.includes('BIOS') && !content.includes('Terminal ready') && 
-                    !content.includes('Memory check') && !content.includes('Loading') && 
+                if (!content.includes('BIOS') && !content.includes('Terminal ready') &&
+                    !content.includes('Memory check') && !content.includes('Loading') &&
                     !content.includes('Initializing') && !content.includes('Network connection') &&
                     !content.includes('Kernel loaded')&&
                     !content.includes('Loading language modules') &&
@@ -330,14 +362,17 @@ class RetroTerminal {
                     !content.includes('AI ready') &&
                     !content.includes('/OS') &&
                     !content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
-                    
-                    // Add separator after content is typed and before action buttons
-                    messageDiv.appendChild(separator);
+
+                    // Add separator *before* action buttons
+                     messageDiv.insertBefore(separator, actionsDiv);
                 }
-                
-                // Add action buttons after separator
-                messageDiv.appendChild(actionsDiv);
-                
+
+                // Add action buttons (already created, just ensure they are appended last within messageDiv)
+                 if (!actionsDiv.parentNode) { // Append only if not already appended (shouldn't happen but safe check)
+                     messageDiv.appendChild(actionsDiv);
+                 }
+
+
                 // Scroll to ensure everything is visible
                 this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
             });
@@ -350,17 +385,17 @@ class RetroTerminal {
             console.warn('Remarkable not initialized, falling back to plain text');
             return this.escapeHtml(text);
         }
-        
+
         try {
             // Pre-process custom terminal elements
             text = this.preprocessText(text);
-            
+
             // Convert markdown to HTML using remarkable
             let html = this.md.render(text);
-            
+
             // Post-process for terminal-specific styling
             html = this.postprocessHtml(html);
-            
+
             return html;
         } catch (error) {
             console.error('Markdown rendering error:', error);
@@ -376,9 +411,15 @@ class RetroTerminal {
     }
 
     postprocessHtml(html) {
-        // Add copy buttons to code blocks
-        html = html.replace(/<div class="code-block-container">/g, 
-            '<div class="code-block-container"><button class="copy-button">COPY</button>');
+        // // Wrap every <pre><code…>…</code></pre> in a container + copy button
+        // html = html.replace(
+        //     /<pre><code([^>]*)>/g,
+        //     '<div class="code-block-container"><button class="copy-button">COPY</button><pre><code$1>'
+        // );
+        // html = html.replace(
+        //     /<\/code><\/pre>/g,
+        //     '</code></pre></div>'
+        // );
 
         // Ensure images have proper terminal styling
         html = html.replace(/<img /g, '<img class="rendered-image" ');
@@ -386,23 +427,8 @@ class RetroTerminal {
         return html;
     }
 
-    // Update initialization of any copy buttons
-    initializeCodeBlock(element) {
-        const copyButtons = element.querySelectorAll('.copy-button');
-        copyButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const codeBlock = button.nextElementSibling;
-                if (codeBlock) {
-                    const code = codeBlock.textContent;
-                    this.copyToClipboard(code);
-                }
-            });
-        });
-    }
-
-
     // Escape HTML to prevent XSS
-    escapeHtml(unsafe) {
+    escapeHtml(unsafe) { // Keep this method
         return unsafe
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;") // Fixed the typo here
@@ -415,27 +441,27 @@ class RetroTerminal {
     async sendMessage() {
         // Add this at the beginning of the method
         const isFirstMessage = this.chatOutput.querySelectorAll('.user-message').length === 0;
-        
+
         // Rest of the existing code...
         const message = this.userInput.value.trim();
-        
+
         // Allow sending just files without text
         if (message === '' && this.attachedFiles.length === 0) return;
-        
+
         if (this.isProcessing || !window.geminiAPI) return;
-        
+
         // Set processing state
         this.isProcessing = true;
         this.sendButton.disabled = true;
         document.getElementById('status-message').textContent = "PROCESSING";
-        
+
         // Clear input field
         this.userInput.value = '';
-        
+
         try {
             // Remove any existing cursor before adding new message
             this.removeCursors();
-            
+
             // Create display message with file info
             let displayMessage = message;
             if (this.attachedFiles.length > 0) {
@@ -443,61 +469,61 @@ class RetroTerminal {
                 if (displayMessage) displayMessage += '\n\n';
                 displayMessage += `[Attached files: ${fileNames}]`;
             }
-            
+
             // Add user message to chat
             this.addMessage('user', displayMessage);
-            
+
             // Add a typing indicator message with cursor
             const loadingMsg = document.createElement('div');
             loadingMsg.className = 'message bot-message loading-message';
             loadingMsg.innerHTML = `<span>${CONFIG.BOT_NAME} is thinking</span> <span class="typing-cursor"></span>`;
             this.chatOutput.appendChild(loadingMsg);
             this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
-            
+
             let response;
-            
+
             // If this is the first message of the conversation, add time context
             if (isFirstMessage) {
                 // Get time since last conversation
                 const timeSinceLastChat = this.getTimeSinceLastConversation();
                 const currentDateTime = new Date().toLocaleString();
-                
+
                 // Create a context message to send to the API
                 let contextMessage = `Current date and time: ${currentDateTime}.`;
                 if (timeSinceLastChat) {
                     contextMessage += ` It has been ${timeSinceLastChat} since our last conversation.`;
                 }
-                
+
                 // Send the context message to the API first
                 await window.geminiAPI.sendMessage(contextMessage, true); // true means don't display this message
             }
-            
+
             // Continue with existing file handling and API calls
             if (this.attachedFiles.length > 0) {
                 // Convert files to appropriate format
                 const filePromises = this.attachedFiles.map(file => {
                     return new Promise((resolve, reject) => {
                         const reader = new FileReader();
-                        
+
                         reader.onload = () => {
                             resolve({
                                 file: file,
                                 data: reader.result
                             });
                         };
-                        
+
                         reader.onerror = () => {
                             reject(new Error(`Failed to read file: ${file.name}`));
                         };
-                        
+
                         // Read file as data URL (base64)
                         reader.readAsDataURL(file);
                     });
                 });
-                
+
                 const fileData = await Promise.all(filePromises);
                 response = await window.geminiAPI.sendMessageWithFiles(message, fileData);
-                
+
                 // Clear attached files and hide preview container AFTER successful processing/sending
                 this.attachedFiles = [];
                 document.getElementById('file-preview-container').innerHTML = '';
@@ -506,17 +532,17 @@ class RetroTerminal {
                 // Regular message without files
                 response = await window.geminiAPI.sendMessage(message);
             }
-            
+
             // Remove the loading message
             if (loadingMsg.parentNode) {
                 this.chatOutput.removeChild(loadingMsg);
             }
-            
+
             // Add response to chat
             if (response) { // Check if response exists (might not if only files were sent and API doesn't return text)
                 this.addMessage('bot', response);
             }
-            
+
             // Save the timestamp of this conversation
             this.saveLastConversationTimestamp();
         } catch (error) {
@@ -535,7 +561,7 @@ class RetroTerminal {
             this.userInput.focus();
         }
     }
-    
+
     // Update the clock in status bar
     updateClock() {
         const now = new Date();
@@ -547,12 +573,12 @@ class RetroTerminal {
         return new Promise(resolve => {
             // Clear the element first
             element.innerHTML = '';
-            
+
             // Split into paragraphs
             const paragraphs = text.split(/\n\s*\n/);
             let currentChunk = '';
             const chunks = [];
-            
+
             paragraphs.forEach(paragraph => {
                 // Check if it's a code block
                 if (paragraph.trim().startsWith('```')) {
@@ -569,7 +595,7 @@ class RetroTerminal {
                     currentChunk += paragraph.replace(/\n/g, ' ').trim();
                 }
             });
-            
+
             // Add any remaining content
             if (currentChunk) {
                 chunks.push(currentChunk);
@@ -583,13 +609,13 @@ class RetroTerminal {
                     const partialText = chunks.slice(0, current + 1).join('\n\n');
                     // Render markdown for the complete partial text
                     element.innerHTML = this.renderMarkdown(partialText);
-                    
-                    // Initialize any code blocks in this chunk
-                    this.initializeCodeBlock(element);
-                    
+
                     // Scroll to bottom
-                    element.parentElement.scrollTop = element.parentElement.scrollHeight;
-                    
+                    // Ensure parentElement exists before accessing scrollTop/scrollHeight
+                    if (element.parentElement) {
+                         element.parentElement.scrollTop = element.parentElement.scrollHeight;
+                    }
+
                     current++;
                     setTimeout(typeChunk, chunkDelay);
                 } else {
@@ -605,6 +631,50 @@ class RetroTerminal {
                 cursor.className = 'typing-cursor';
                 element.appendChild(cursor);
             }
+        });
+    }
+
+    // Simple plain text typing animation
+    typeTextPlain(element, text, speed = 0.1) {
+        return new Promise(resolve => {
+            element.innerHTML = ''; // Clear the element
+            let i = 0;
+            let typingTimeout; // Store timeout ID
+
+            // Cancel any previous typing animation for this element
+            if (this.lastTypingCancellation) {
+                this.lastTypingCancellation();
+            }
+
+            const typeChar = () => {
+                if (i < text.length) {
+                    // Append character by character, escaping HTML for safety during typing
+                    element.innerHTML += this.escapeHtml(text.charAt(i));
+                    i++;
+                    // Scroll to bottom during typing
+                    if (element.parentElement) {
+                        element.parentElement.scrollTop = element.parentElement.scrollHeight;
+                    }
+                    typingTimeout = setTimeout(typeChar, speed); // Schedule next character
+                } else {
+                    // Add cursor at the end of plain text typing (will be replaced later)
+                    const cursor = document.createElement('span');
+                    cursor.className = 'typing-cursor';
+                    element.appendChild(cursor);
+                    this.lastTypingCancellation = null; // Clear cancellation function
+                    resolve();
+                }
+            };
+
+            // Store a function to cancel this specific typing animation
+            this.lastTypingCancellation = () => {
+                clearTimeout(typingTimeout);
+                this.lastTypingCancellation = null;
+                 // Optionally resolve or reject the promise if needed upon cancellation
+                 resolve(); // Resolve immediately if cancelled to proceed
+            };
+
+            typeChar(); // Start typing
         });
     }
 
@@ -634,7 +704,7 @@ class RetroTerminal {
                 const lastBotMessage = messages[messages.length - 1];
                 this.chatOutput.removeChild(lastBotMessage);
             }
-            
+
             // Resend the query
             this.resendMessage(lastUserMessage);
         }
@@ -657,11 +727,11 @@ class RetroTerminal {
         this.sendButton.disabled = true;
         document.getElementById('status-message').textContent = "PROCESSING";
         document.getElementById('status-message').classList.add('loading');
-        
+
         try {
             // Send to Gemini API
             const response = await window.geminiAPI.sendMessage(message);
-            
+
             // Add response to chat
             this.addMessage('bot', response);
         } catch (error) {
@@ -747,21 +817,21 @@ class RetroTerminal {
     saveCurrentChat() {
         // Only save if we have messages
         if (this.chatOutput.querySelectorAll('.message').length < 3) return; // Ignore boot messages
-        
+
         const savedChats = JSON.parse(localStorage.getItem('geminiChats') || '[]');
-        
+
         // Create a chat object
         const chatMessages = [];
         const messages = this.chatOutput.querySelectorAll('.message');
-        
+
         let foundRealConversation = false;
-        
+
         messages.forEach(msg => {
             // Skip boot messages entirely
             if (msg.classList.contains('boot-message')) {
                 return;
             }
-            
+
             if (msg.classList.contains('user-message')) {
                 // This is a user message - add it and mark that we've started the real conversation
                 foundRealConversation = true;
@@ -771,14 +841,14 @@ class RetroTerminal {
                 });
             } else if (msg.classList.contains('bot-message')) {
                 const content = msg.querySelector('.message-content')?.textContent || msg.textContent;
-                
+
                 // Skip welcome message
-                if (content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`) || 
-                    content.includes("Terminal online") || 
+                if (content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`) ||
+                    content.includes("Terminal online") ||
                     content.includes("Awaiting input")) {
                     return;
                 }
-                
+
                 // If we already found a real user message, or this is a substantive bot response
                 // that isn't just the welcome message, include it
                 if (foundRealConversation) {
@@ -789,38 +859,38 @@ class RetroTerminal {
                 }
             }
         });
-        
+
         // Only save if we have actual conversation messages (at least one user message)
         if (chatMessages.length < 1) return;
-        
+
         // Use first user message as title, or first few words if very long
         let chatTitle = "New Chat";
         for (const msg of chatMessages) {
             if (msg.role === 'user') {
-                chatTitle = msg.content.length > 30 ? 
-                    msg.content.substring(0, 30) + '...' : 
+                chatTitle = msg.content.length > 30 ?
+                    msg.content.substring(0, 30) + '...' :
                     msg.content;
                 break;
             }
         }
-        
+
         const timestamp = new Date().toISOString();
-        
+
         // If this is a new chat, generate a new ID
         if (!this.currentConversationId) {
             this.currentConversationId = Date.now().toString();
         }
-        
+
         const chat = {
             id: this.currentConversationId,
             title: chatTitle,
             timestamp: timestamp,  // Always update timestamp to current time
             messages: chatMessages
         };
-        
+
         // Check if this conversation already exists
         const existingIndex = savedChats.findIndex(c => c.id === this.currentConversationId);
-        
+
         if (existingIndex !== -1) {
             // Replace existing chat
             savedChats[existingIndex] = chat;
@@ -828,7 +898,7 @@ class RetroTerminal {
             // Add new chat
             savedChats.push(chat);
         }
-        
+
         // Store in localStorage
         localStorage.setItem('geminiChats', JSON.stringify(savedChats));
     }
@@ -837,24 +907,24 @@ class RetroTerminal {
     loadSavedChats() {
         const historyList = document.querySelector('#history-list');
         historyList.innerHTML = ''; // Clear current list
-        
+
         const savedChats = JSON.parse(localStorage.getItem('geminiChats') || '[]');
-        
+
         if (savedChats.length === 0) {
             historyList.innerHTML = '<div class="no-history">No saved chats</div>';
             return;
         }
-        
+
         // Sort by timestamp (newest first)
         savedChats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        
+
         // Create chat items
         savedChats.forEach(chat => {
             const chatItem = document.createElement('div');
             chatItem.className = 'history-item';
-            
+
             const chatDate = new Date(chat.timestamp).toLocaleString();
-            
+
             chatItem.innerHTML = `
                 <div class="history-item-title">${chat.title}</div>
                 <div class="history-item-date">${chatDate}</div>
@@ -863,10 +933,10 @@ class RetroTerminal {
                     <button class="history-delete" data-id="${chat.id}">DELETE</button>
                 </div>
             `;
-            
+
             historyList.appendChild(chatItem);
         });
-        
+
         // Add event listeners
         document.querySelectorAll('.history-load').forEach(button => {
             button.addEventListener('click', (e) => {
@@ -874,7 +944,7 @@ class RetroTerminal {
                 this.loadChat(chatId);
             });
         });
-        
+
         document.querySelectorAll('.history-delete').forEach(button => {
             button.addEventListener('click', (e) => {
                 const chatId = e.target.getAttribute('data-id');
@@ -887,17 +957,17 @@ class RetroTerminal {
     loadChat(chatId) {
         const savedChats = JSON.parse(localStorage.getItem('geminiChats') || '[]');
         const chat = savedChats.find(c => c.id === chatId);
-        
+
         if (!chat) return;
-        
+
         // Clear current chat
         this.chatOutput.innerHTML = '';
-        
+
         // Load messages
         chat.messages.forEach(msg => {
             this.addMessage(msg.role, msg.content);
         });
-        
+
         // Close history panel
         document.querySelector('#history-panel').style.display = 'none';
     }
@@ -907,7 +977,7 @@ class RetroTerminal {
         let savedChats = JSON.parse(localStorage.getItem('geminiChats') || '[]');
         savedChats = savedChats.filter(chat => chat.id !== chatId);
         localStorage.setItem('geminiChats', JSON.stringify(savedChats));
-        
+
         // Refresh the list
         this.loadSavedChats();
     }
@@ -916,17 +986,17 @@ class RetroTerminal {
     deleteAllChats() {
         // Ask for confirmation
         const confirmation = confirm("WARNING: This will permanently delete ALL chat history. Continue?");
-        
+
         if (confirmation) {
             // Clear local storage
             localStorage.removeItem('geminiChats');
-            
+
             // Update status
             document.getElementById('status-message').textContent = "ALL HISTORY DELETED";
             setTimeout(() => {
                 document.getElementById('status-message').textContent = "READY";
             }, 2000);
-            
+
             // Refresh the history list (which will show "No saved chats")
             this.loadSavedChats();
         }
@@ -934,45 +1004,45 @@ class RetroTerminal {
 
     // Update startNewChat to save current conversation first
 
-    
+
     startNewChat() {
         // Save current chat before starting new one
         this.saveCurrentChat();
-        
+
         // Clear conversation history in the API object
         if (window.geminiAPI) {
             window.geminiAPI.clearHistory();
         }
-        
+
         // Generate new conversation ID
         this.currentConversationId = Date.now().toString();
-        
+
         // Clear chat
         this.chatOutput.innerHTML = '';
-        
+
         // Get time context
         const timeSinceLastChat = this.getTimeSinceLastConversation();
         const currentDateTime = new Date().toLocaleString();
-        
+
         // Create welcome message with time info and use current persona name
         let welcomeMessage = `Hello! I'm ${CONFIG.BOT_NAME}. I'm here to assist you.`;
-        
+
         if (timeSinceLastChat) {
             welcomeMessage += ` `;
         }
-        
+
         welcomeMessage += " How can I assist you today?";
-        
+
         // Add welcome message with cursor
         this.addMessage('bot', welcomeMessage);
-        
+
         // Save this as the last conversation time
         this.saveLastConversationTimestamp();
-        
+
         // Reset input field
         this.userInput.value = '';
         this.userInput.focus();
-        
+
         // Close history panel if open
         const historyPanel = document.querySelector('#history-panel');
         if (historyPanel && historyPanel.style.display !== 'none') {
