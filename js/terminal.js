@@ -1070,6 +1070,7 @@ class RetroTerminal {
             <div class="settings-tabs">
                 <div class="settings-tab active" data-tab="general-settings">GENERAL</div>
                 <div class="settings-tab" data-tab="personas-settings">PERSONAS</div>
+                <div class="settings-tab" data-tab="api-keys-settings">API KEYS</div>
             </div>
             
             <div id="general-settings" class="settings-tab-content active">
@@ -1116,6 +1117,32 @@ class RetroTerminal {
                     </form>
                 </div>
             </div>
+            
+            <div id="api-keys-settings" class="settings-tab-content">
+                <div id="api-keys-list" class="api-keys-list">
+                    <!-- API keys will be added here dynamically -->
+                </div>
+                
+                <button id="add-api-key-button" class="terminal-button add-api-key-button">ADD NEW API KEY</button>
+                
+                <div class="api-key-form">
+                    <form id="api-key-form">
+                        <input type="hidden" id="api-key-id">
+                        <div class="setting-item">
+                            <label for="api-key-name">API Key Name:</label>
+                            <input type="text" id="api-key-name" placeholder="e.g. My Personal Key">
+                        </div>
+                        <div class="setting-item">
+                            <label for="api-key-value">API Key:</label>
+                            <input type="password" id="api-key-value" placeholder="Enter your Gemini API key">
+                        </div>
+                        <div class="form-buttons">
+                            <button type="button" id="save-api-key-button" class="terminal-button">SAVE</button>
+                            <button type="button" id="cancel-api-key-button" class="terminal-button">CANCEL</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         `;
 
         const buttonsContainer = document.createElement('div');
@@ -1156,6 +1183,23 @@ class RetroTerminal {
         document.getElementById('cancel-persona-button').addEventListener('click', (e) => {
             e.preventDefault();
             this.cancelPersonaForm();
+        });
+
+        this.initializeApiKeyManagement();
+
+        // Add listeners for API key buttons
+        document.getElementById('add-api-key-button').addEventListener('click', () => {
+            this.createNewApiKey();
+        });
+
+        document.getElementById('save-api-key-button').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.saveApiKeyForm();
+        });
+
+        document.getElementById('cancel-api-key-button').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.cancelApiKeyForm();
         });
     }
 
@@ -1526,5 +1570,504 @@ class RetroTerminal {
                 cursor.parentNode.removeChild(cursor);
             }
         });
+    }
+
+    // NEW: Initialize API Key Management
+    initializeApiKeyManagement() {
+        // Ensure we have the default API keys in storage
+        this.loadApiKeys();
+        
+        // Add event listeners for switching tabs in settings panel
+        document.addEventListener('click', e => {
+            if (e.target.classList.contains('settings-tab')) {
+                // Get all tabs and content, remove active class
+                const tabs = document.querySelectorAll('.settings-tab');
+                const tabContents = document.querySelectorAll('.settings-tab-content');
+                
+                tabs.forEach(tab => tab.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                e.target.classList.add('active');
+                const tabId = e.target.dataset.tab;
+                document.getElementById(tabId).classList.add('active');
+            }
+        });
+    }
+
+    // Load API keys from storage
+    loadApiKeys() {
+        let apiKeys = JSON.parse(localStorage.getItem('geminiApiKeys') || '[]');
+        
+        return apiKeys;
+    }
+
+    // Save API keys to storage
+    saveApiKeys(apiKeys) {
+        localStorage.setItem('geminiApiKeys', JSON.stringify(apiKeys));
+    }
+
+    // Display API keys in settings panel
+    displayApiKeys() {
+        const apiKeys = this.loadApiKeys();
+        const apiKeysList = document.getElementById('api-keys-list');
+        
+        if (!apiKeysList) return;
+        
+        apiKeysList.innerHTML = '';
+        
+        apiKeys.forEach(apiKey => {
+            const apiKeyItem = document.createElement('div');
+            apiKeyItem.className = `api-key-item`;
+            
+            apiKeyItem.innerHTML = `
+                <div class="api-key-name">${apiKey.name}</div>
+                <div class="api-key-actions">
+                    <button class="api-key-button edit-api-key" data-id="${apiKey.id}">EDIT</button>
+                    <button class="api-key-button delete-api-key" data-id="${apiKey.id}">DELETE</button>
+                </div>
+            `;
+            
+            apiKeysList.appendChild(apiKeyItem);
+        });
+        
+        // Add event listeners
+        document.querySelectorAll('.edit-api-key').forEach(button => {
+            button.addEventListener('click', e => {
+                const apiKeyId = e.target.dataset.id;
+                this.editApiKey(apiKeyId);
+            });
+        });
+        
+        document.querySelectorAll('.delete-api-key').forEach(button => {
+            button.addEventListener('click', e => {
+                const apiKeyId = e.target.dataset.id;
+                this.deleteApiKey(apiKeyId);
+            });
+        });
+    }
+
+    // Edit an API key
+    editApiKey(apiKeyId) {
+        const apiKeys = this.loadApiKeys();
+        const apiKey = apiKeys.find(k => k.id === apiKeyId);
+        
+        if (!apiKey) return;
+        
+        // Populate form
+        document.getElementById('api-key-id').value = apiKey.id;
+        document.getElementById('api-key-name').value = apiKey.name;
+        document.getElementById('api-key-value').value = apiKey.value;
+        
+        // Show form
+        document.querySelector('.api-key-form').classList.add('visible');
+        
+        // Scroll to form
+        document.querySelector('.api-key-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Delete an API key
+    deleteApiKey(apiKeyId) {
+        // Ask for confirmation
+        const confirmation = confirm("Are you sure you want to delete this API key?");
+        if (!confirmation) return;
+        
+        let apiKeys = this.loadApiKeys();
+        
+        // Remove the API key
+        apiKeys = apiKeys.filter(k => k.id !== apiKeyId);
+        
+        // Save updated API keys
+        this.saveApiKeys(apiKeys);
+        
+        // Update display
+        this.displayApiKeys();
+        
+        // Show confirmation
+        document.getElementById('status-message').textContent = "API KEY DELETED";
+        setTimeout(() => {
+            document.getElementById('status-message').textContent = "READY";
+        }, 2000);
+    }
+
+    // Save API key from form
+    saveApiKeyForm() {
+        const apiKeyId = document.getElementById('api-key-id').value;
+        const name = document.getElementById('api-key-name').value.trim();
+        const value = document.getElementById('api-key-value').value.trim();
+        
+        // Validate
+        if (!name) {
+            alert("API key name cannot be empty.");
+            return;
+        }
+        if (!value) {
+            alert("API key value cannot be empty.");
+            return;
+        }
+        
+        const apiKeys = this.loadApiKeys();
+        
+        if (apiKeyId) {
+            // Edit existing API key
+            const apiKeyIndex = apiKeys.findIndex(k => k.id === apiKeyId);
+            
+            if (apiKeyIndex !== -1) {
+                // Update API key
+                apiKeys[apiKeyIndex].name = name;
+                apiKeys[apiKeyIndex].value = value;
+            }
+        } else {
+            // Create new API key
+            const newApiKey = {
+                id: Date.now().toString(),
+                name: name,
+                value: value
+            };
+            
+            apiKeys.push(newApiKey);
+        }
+        
+        // Save updated API keys
+        this.saveApiKeys(apiKeys);
+        
+        // Hide form and reset
+        document.querySelector('.api-key-form').classList.remove('visible');
+        document.getElementById('api-key-form').reset();
+        document.getElementById('api-key-id').value = '';
+        
+        // Update display
+        this.displayApiKeys();
+        
+        // Show confirmation
+        document.getElementById('status-message').textContent = "API KEY SAVED";
+        setTimeout(() => {
+            document.getElementById('status-message').textContent = "READY";
+        }, 2000);
+    }
+
+    // Create a new API key
+    createNewApiKey() {
+        // Reset form
+        document.getElementById('api-key-form').reset();
+        document.getElementById('api-key-id').value = '';
+        
+        // Show form
+        document.querySelector('.api-key-form').classList.add('visible');
+        
+        // Scroll to form
+        document.querySelector('.api-key-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Cancel form edit
+    cancelApiKeyForm() {
+        document.querySelector('.api-key-form').classList.remove('visible');
+        document.getElementById('api-key-form').reset();
+        document.getElementById('api-key-id').value = '';
+    }
+
+    // Add these methods to the RetroTerminal class
+
+    // Initialize API key management
+    initializeApiKeyManagement() {
+        // Ensure we have at least one API key in storage
+        this.loadApiKeys();
+        
+        // Display API keys
+        this.displayApiKeys();
+    }
+
+    // Load API keys from storage
+    loadApiKeys() {
+        let apiKeys = JSON.parse(localStorage.getItem('geminiApiKeys') || '[]');
+        
+        // If no API keys stored, initialize with current key if it exists
+        if (apiKeys.length === 0 && CONFIG.API_KEY) {
+            const defaultKey = {
+                id: 'default',
+                name: 'Default Key',
+                value: CONFIG.API_KEY,
+                active: true
+            };
+            apiKeys = [defaultKey];
+            localStorage.setItem('geminiApiKeys', JSON.stringify(apiKeys));
+        }
+        
+        return apiKeys;
+    }
+
+    // Save API keys to storage
+    saveApiKeys(apiKeys) {
+        localStorage.setItem('geminiApiKeys', JSON.stringify(apiKeys));
+    }
+
+    // Display API keys in settings panel
+    displayApiKeys() {
+        const apiKeys = this.loadApiKeys();
+        const apiKeysList = document.getElementById('api-keys-list');
+        
+        if (!apiKeysList) return;
+        
+        apiKeysList.innerHTML = '';
+        
+        if (apiKeys.length === 0) {
+            apiKeysList.innerHTML = '<div class="no-api-keys">No API keys saved. Add one to get started.</div>';
+            return;
+        }
+        
+        apiKeys.forEach(apiKey => {
+            const apiKeyItem = document.createElement('div');
+            apiKeyItem.className = `api-key-item ${apiKey.active ? 'active' : ''}`;
+            
+            // Mask the API key for display
+            const maskedKey = apiKey.value ? '••••••••' + apiKey.value.substring(apiKey.value.length - 4) : '••••••••';
+            
+            apiKeyItem.innerHTML = `
+                <div class="api-key-name">${apiKey.name}</div>
+                <div class="api-key-value">${maskedKey}</div>
+                <div class="api-key-actions">
+                    <button class="api-key-button select-api-key" data-id="${apiKey.id}">SELECT</button>
+                    <button class="api-key-button edit-api-key" data-id="${apiKey.id}">EDIT</button>
+                    <button class="api-key-button delete-api-key" data-id="${apiKey.id}">DELETE</button>
+                </div>
+            `;
+            
+            apiKeysList.appendChild(apiKeyItem);
+        });
+        
+        // Add event listeners
+        document.querySelectorAll('.select-api-key').forEach(button => {
+            button.addEventListener('click', e => {
+                const apiKeyId = e.target.dataset.id;
+                this.activateApiKey(apiKeyId);
+            });
+        });
+        
+        document.querySelectorAll('.edit-api-key').forEach(button => {
+            button.addEventListener('click', e => {
+                const apiKeyId = e.target.dataset.id;
+                this.editApiKey(apiKeyId);
+            });
+        });
+        
+        document.querySelectorAll('.delete-api-key').forEach(button => {
+            button.addEventListener('click', e => {
+                const apiKeyId = e.target.dataset.id;
+                this.deleteApiKey(apiKeyId);
+            });
+        });
+    }
+
+    // Activate an API key
+    activateApiKey(apiKeyId) {
+        const apiKeys = this.loadApiKeys();
+        
+        // Update active state
+        apiKeys.forEach(apiKey => {
+            apiKey.active = (apiKey.id === apiKeyId);
+            
+            // If this is the new active API key, update CONFIG
+            if (apiKey.active) {
+                CONFIG.API_KEY = apiKey.value;
+                
+                // Update API instance if available
+                if (window.geminiAPI && typeof window.geminiAPI.updateApiKey === 'function') {
+                    window.geminiAPI.updateApiKey(apiKey.value);
+                    console.log(`API key switched to: ${apiKey.name}`);
+                } else if (window.geminiAPI) {
+                    // If updateApiKey doesn't exist but API does,
+                    // we need to reinitialize with the new key
+                    window.initGeminiAPI(apiKey.value);
+                    console.log(`API reinitialized with key: ${apiKey.name}`);
+                }
+            }
+        });
+        
+        // Save updated API keys
+        this.saveApiKeys(apiKeys);
+        
+        // Update display
+        this.displayApiKeys();
+        
+        // Show confirmation
+        document.getElementById('status-message').textContent = `API KEY: ${apiKeys.find(k => k.active).name}`;
+        setTimeout(() => {
+            document.getElementById('status-message').textContent = "READY";
+        }, 2000);
+    }
+
+    // Edit an API key
+    editApiKey(apiKeyId) {
+        const apiKeys = this.loadApiKeys();
+        const apiKey = apiKeys.find(k => k.id === apiKeyId);
+        
+        if (!apiKey) return;
+        
+        // Populate form
+        document.getElementById('api-key-id').value = apiKey.id;
+        document.getElementById('api-key-name').value = apiKey.name;
+        document.getElementById('api-key-value').value = apiKey.value;
+        
+        // Show form
+        document.querySelector('.api-key-form').classList.add('visible');
+        
+        // Scroll to form
+        document.querySelector('.api-key-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Delete an API key
+    deleteApiKey(apiKeyId) {
+        const apiKeys = this.loadApiKeys();
+        
+        // Check if trying to delete active API key
+        const isActiveKey = apiKeys.find(k => k.id === apiKeyId && k.active);
+        
+        if (isActiveKey && apiKeys.length > 1) {
+            alert("Cannot delete the currently active API key. Please select another key first.");
+            return;
+        }
+        
+        // Confirm deletion
+        const confirmation = confirm("Are you sure you want to delete this API key?");
+        if (!confirmation) return;
+        
+        // Remove the API key
+        const updatedKeys = apiKeys.filter(k => k.id !== apiKeyId);
+        
+        // If we deleted the last key
+        if (updatedKeys.length === 0) {
+            CONFIG.API_KEY = "";
+            document.getElementById('status-message').textContent = "NO API KEY";
+        } 
+        // If we deleted the active key and there are others, activate the first one
+        else if (isActiveKey) {
+            updatedKeys[0].active = true;
+            CONFIG.API_KEY = updatedKeys[0].value;
+            
+            // Update API
+            if (window.geminiAPI && typeof window.geminiAPI.updateApiKey === 'function') {
+                window.geminiAPI.updateApiKey(updatedKeys[0].value);
+            } else if (window.geminiAPI) {
+                window.initGeminiAPI(updatedKeys[0].value);
+            }
+        }
+        
+        // Save updated API keys
+        this.saveApiKeys(updatedKeys);
+        
+        // Update display
+        this.displayApiKeys();
+        
+        // Show confirmation
+        document.getElementById('status-message').textContent = "API KEY DELETED";
+        setTimeout(() => {
+            document.getElementById('status-message').textContent = "READY";
+        }, 2000);
+    }
+
+    // Save API key from form
+    saveApiKeyForm() {
+        const apiKeyId = document.getElementById('api-key-id').value;
+        const name = document.getElementById('api-key-name').value.trim();
+        const value = document.getElementById('api-key-value').value.trim();
+        
+        // Validate
+        if (!name) {
+            alert("API key name cannot be empty.");
+            return;
+        }
+        
+        if (!value) {
+            alert("API key value cannot be empty.");
+            return;
+        }
+        
+        const apiKeys = this.loadApiKeys();
+        
+        if (apiKeyId) {
+            // Edit existing API key
+            const keyIndex = apiKeys.findIndex(k => k.id === apiKeyId);
+            
+            if (keyIndex !== -1) {
+                // Update API key
+                apiKeys[keyIndex].name = name;
+                apiKeys[keyIndex].value = value;
+                
+                // Update CONFIG if this is the active API key
+                if (apiKeys[keyIndex].active) {
+                    CONFIG.API_KEY = value;
+                    
+                    // Update API
+                    if (window.geminiAPI && typeof window.geminiAPI.updateApiKey === 'function') {
+                        window.geminiAPI.updateApiKey(value);
+                    } else if (window.geminiAPI) {
+                        window.initGeminiAPI(value);
+                    }
+                }
+            }
+        } else {
+            // Create new API key
+            const newApiKey = {
+                id: Date.now().toString(),
+                name: name,
+                value: value,
+                active: apiKeys.length === 0 // If it's the first key, make it active
+            };
+            
+            // If this is the first key or being set as active
+            if (newApiKey.active) {
+                // Set all other keys to inactive
+                apiKeys.forEach(k => k.active = false);
+                
+                // Update CONFIG
+                CONFIG.API_KEY = value;
+                
+                // Update API
+                if (window.geminiAPI && typeof window.geminiAPI.updateApiKey === 'function') {
+                    window.geminiAPI.updateApiKey(value);
+                } else if (window.geminiAPI) {
+                    window.initGeminiAPI(value);
+                }
+            }
+            
+            apiKeys.push(newApiKey);
+        }
+        
+        // Save updated API keys
+        this.saveApiKeys(apiKeys);
+        
+        // Hide form and reset
+        document.querySelector('.api-key-form').classList.remove('visible');
+        document.getElementById('api-key-form').reset();
+        document.getElementById('api-key-id').value = '';
+        
+        // Update display
+        this.displayApiKeys();
+        
+        // Show confirmation
+        document.getElementById('status-message').textContent = "API KEY SAVED";
+        setTimeout(() => {
+            document.getElementById('status-message').textContent = "READY";
+        }, 2000);
+    }
+
+    // Create a new API key
+    createNewApiKey() {
+        // Reset form
+        document.getElementById('api-key-form').reset();
+        document.getElementById('api-key-id').value = '';
+        
+        // Show form
+        document.querySelector('.api-key-form').classList.add('visible');
+        
+        // Scroll to form
+        document.querySelector('.api-key-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Cancel form edit
+    cancelApiKeyForm() {
+        document.querySelector('.api-key-form').classList.remove('visible');
+        document.getElementById('api-key-form').reset();
+        document.getElementById('api-key-id').value = '';
     }
 }

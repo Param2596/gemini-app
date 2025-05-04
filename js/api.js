@@ -288,6 +288,14 @@ console.log("GeminiAPI class ready, waiting for API key");
 // Export a function to initialize the API with a key
 window.initGeminiAPI = function(apiKey) {
   window.geminiAPI = new GeminiAPI(apiKey, CONFIG.MODEL);
+  
+  // Add updateApiKey method to the API instance
+  window.geminiAPI.updateApiKey = function(newApiKey) {
+    this.apiKey = newApiKey;
+    console.log("API key updated successfully");
+    return true;
+  };
+  
   console.log("GeminiAPI initialized with API key");
   return window.geminiAPI;
-}
+};

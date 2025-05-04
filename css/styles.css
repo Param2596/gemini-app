@@ -1385,3 +1385,97 @@ th {
 .settings-tab-content.active {
     display: block;
 }
+
+/* API Key Management Styles */
+.api-keys-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.api-key-item {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    position: relative;
+}
+
+.api-key-item.active {
+    border-color: var(--text-color);
+    box-shadow: 0 0 5px var(--glow-color);
+}
+
+.api-key-item.active::before {
+    content: "ACTIVE";
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 12px;
+    color: var(--text-color);
+}
+
+.api-key-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+    padding-right: 70px; /* Space for ACTIVE label */
+}
+
+.api-key-value {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-bottom: 8px;
+    font-family: monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.api-key-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.api-key-button {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 3px 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.api-key-button:hover {
+    background-color: var(--text-color);
+    color: var(--background-color);
+}
+
+.delete-api-key {
+    color: #FF5555;
+    border-color: #FF5555;
+}
+
+.delete-api-key:hover {
+    background-color: #FF5555;
+    color: var(--background-color);
+}
+
+.add-api-key-button {
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+/* API Key Edit Form */
+.api-key-form {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    margin-top: 15px;
+    display: none;
+}
+
+.api-key-form.visible {
+    display: block;
+}
