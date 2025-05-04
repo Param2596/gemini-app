@@ -9,13 +9,14 @@ html, body {
     color: var(--text-color);
     font-family: 'VT323', 'Courier New', monospace;
     font-size: 20px; /* Slightly larger font size */
-    font-weight: 40;
+    font-weight: 400; /* Fixed from 40 to 400 which is standard font-weight value */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: 0.5px; /* Add slight spacing between letters */
     overflow: hidden;
 }
 
+<<<<<<< HEAD
 /* Optimize the text shadow for better clarity */
 .message {
     margin: 4px 0;  /* Reduce from default spacing */
@@ -34,6 +35,19 @@ html, body {
 }
 
 /* Improve contrast and readability without losing retro feel */
+=======
+/* Web font for more authentic terminal look */
+@font-face {
+    font-family: 'VT323';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap; /* Improves font loading behavior */
+    src: url(https://fonts.gstatic.com/s/vt323/v17/pxiKyp0ihIEF2isfFJU.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Theme color variables */
+>>>>>>> debuggin
 :root {
     /* Default Theme: Amber - increased contrast */
     --background-color: #111111; 
@@ -68,54 +82,6 @@ html, body {
     --glow-color: rgba(255, 85, 85, 0.3);
 }
 
-/* Optimize CRT scan lines - make them more subtle */
-#crt-container::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* background: linear-gradient(
-        rgba(18, 16, 16, 0) 50%, 
-        var(--scan-line-color) 50%
-    ); */
-    background: none;
-    background-size: 100% 4px;
-    pointer-events: none;
-    z-index: 10;
-    opacity: 0; /* More subtle scan lines */
-}
-
-/* Refine the CRT edge glow for better text clarity */
-#crt-container::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* box-shadow: 
-        inset 0 0 100px rgba(0, 0, 0, 0.8),
-        inset 0 0 35px var(--glow-color); */
-    box-shadow: none;
-    pointer-events: none;
-    z-index: 2;
-    border-radius: 2px;
-}
-
-
-
-/* Web font for more authentic terminal look */
-@font-face {
-    font-family: 'VT323';
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap; /* Improves font loading behavior */
-    src: url(https://fonts.gstatic.com/s/vt323/v17/pxiKyp0ihIEF2isfFJU.woff2) format('woff2');
-    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
 /* CRT Monitor Container */
 #crt-container {
     position: fixed;
@@ -140,15 +106,11 @@ html, body {
     left: 0;
     width: 100%;
     height: 100%;
-    /* background: linear-gradient(
-        rgba(18, 16, 16, 0) 50%, 
-        var(--scan-line-color) 50%
-    ); */
     background: none;
     background-size: 100% 4px;
     pointer-events: none;
     z-index: 10;
-    opacity: 0.08; /* More subtle scan lines */
+    opacity: 0.08; /* Subtle scan lines */
 }
 
 /* CRT Edge Glow */
@@ -184,52 +146,68 @@ html, body {
     text-transform: uppercase;
 }
 
-/* Update terminal controls to accommodate buttons */
+/* Terminal controls */
 #terminal-controls {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px; /* Consistent spacing between elements */
 }
 
-#theme-selector {
-    background-color: var(--input-bg);
+/* Common style for all header buttons and selectors */
+.header-button, #theme-selector {
+    background-color: var(--background-color);
     color: var(--text-color);
     border: 1px solid var(--border-color);
-    padding: 5px 10px;
+    padding: 4px 8px;
     font-family: inherit;
-    font-size: 14px;
-    border-radius: 0;
+    font-size: 16px;
     cursor: pointer;
+    text-transform: uppercase;
+    height: 28px; /* Fixed height for all elements */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Hover state for all header controls */
+.header-button:hover, #theme-selector:hover {
+    background-color: var(--text-color);
+    color: var(--background-color);
+}
+
+/* Theme selector specific overrides */
+#theme-selector {
     outline: none;
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    position: relative;
-    text-transform: uppercase;
+    padding-right: 20px; /* Space for the dropdown arrow */
 }
 
-#theme-selector:focus {
-    border-color: var(--text-color);
-    box-shadow: 0 0 5px var(--glow-color);
-}
-
-/* Custom dropdown arrow */
+/* Custom dropdown arrow container position */
 .select-wrapper {
     position: relative;
     display: inline-block;
 }
 
+/* Custom dropdown arrow */
 .select-wrapper::after {
     content: "▼";
-    font-size: 12px;
+    font-size: 10px;
     color: var(--text-color);
     position: absolute;
-    right: 10px;
+    right: 8px;
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
 }
 
+/* When theme selector is hovered, arrow should change color */
+.select-wrapper:hover::after {
+    color: var(--background-color);
+}
+
+/* Main chat layout */
 #chat-container {
     flex-grow: 1;
     display: flex;
@@ -270,6 +248,7 @@ html, body {
     border: 2px solid var(--input-bg);
 }
 
+<<<<<<< HEAD
 /* Fix spacing in bot messages */
 .bot-message {
     white-space: pre-wrap;
@@ -290,10 +269,12 @@ html, body {
 }
 
 /* Make the message text more compact */
+=======
+/* Message styling */
+>>>>>>> debuggin
 .message {
     margin: 4px 0;  /* Reduce from default spacing */
     text-shadow: 0 0 4px var(--glow-color);
-    /* Reduce flicker effect for better readability */
     animation: textFlicker 0.5s infinite alternate;
     animation-play-state: paused; 
     line-height: 1.2;  /* Tighter line height */
@@ -316,58 +297,61 @@ html, body {
     margin-bottom: 6px;  /* Reduce space between messages */
 }
 
+/* Bot message styling - FIXED to avoid duplicate/conflicting styles */
 .bot-message {
+<<<<<<< HEAD
     white-space: pre-wrap;
     line-height: 1.15; /* Slightly increased for readability but still compact */
     margin-bottom: 6px;  /* Reduce space between messages */
+=======
+    white-space: pre-wrap; /* Keep to respect line breaks */
+    line-height: 1.15; /* Consistent line height */
+    margin-bottom: 8px;
+>>>>>>> debuggin
 }
 
+/* Clear and consistent paragraph styling */
 .bot-message p {
     margin-top: 0.5em;
     margin-bottom: 0.5em;
 }
 
+/* Ensure proper spacing between element types */
+.bot-message * {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Add spacing between consecutive paragraphs */
+.bot-message p + p {
+    margin-top: 0.5em;
+}
+
+/* Handle double line breaks */
 .bot-message br + br {
     content: "";
     display: block;
     margin-top: 0.5em;
 }
 
-/* Ensure proper spacing for code blocks while keeping other elements tight */
-.bot-message pre {
-    margin: 4px 0;
-    padding: 6px;
-    background-color: rgba(30, 30, 30, 0.7);
-    border: 1px solid var(--border-color);
-}
-
-/* Compact lists */
+/* List styling */
 .bot-message ul, .bot-message ol {
-    margin: 2px 0 2px 20px;
-    padding: 0;
+    margin: 0.5em 0 0.5em 20px;
+    padding-left: 10px;
 }
 
 .bot-message li {
-    margin-bottom: 2px;
+    margin-bottom: 0.25em; /* Reduced space between list items */
 }
 
-/* Style basic markdown HTML */
+/* Markdown styling for bot messages */
 .bot-message strong { 
     font-weight: bold; 
     color: var(--text-color);
 }
 
-.bot-message em { 
-    font-style: italic; 
-}
-
-.bot-message ul, .bot-message ol { 
-    margin-left: 20px; 
-    padding-left: 10px; 
-}
-
-.bot-message li { 
-    margin-bottom: 8px; 
+.bot-message em {
+    font-style: italic;
 }
 
 .bot-message code {
@@ -379,59 +363,46 @@ html, body {
 }
 
 .bot-message pre {
-    background-color: rgba(30, 30, 30, 0.7);
+    margin: 0.5em 0;
     padding: 6px;
-    margin: 4px 0;
+    background-color: rgba(30, 30, 30, 0.7);
+    border: 1px solid var(--border-color);
     border-radius: 0;
     overflow-x: auto;
-    border: 1px solid var(--border-color);
 }
 
 .bot-message pre code {
     background-color: transparent;
     padding: 0;
     border: none;
+    font-weight: normal; /* Reset bold for code blocks */
 }
 
 /* Basic Syntax Highlighting for Code Blocks */
-
-/* Default code style */
-.bot-message pre code {
-    color: var(--text-color); /* Default code color */
-    background-color: transparent;
-    padding: 0;
-    border: none;
-    font-weight: normal; /* Reset bold for general code */
-}
-
-/* Keywords (example for JavaScript) */
 pre[data-language="javascript"] code .keyword,
 pre[data-language="js"] code .keyword {
     color: #5599FF; /* Blue for keywords */
     font-weight: bold;
 }
 
-/* Strings (example) */
 pre code .string {
     color: #33FF33; /* Green for strings */
 }
 
-/* Comments (example) */
 pre code .comment {
     color: #888888; /* Grey for comments */
     font-style: italic;
 }
 
-/* Numbers (example) */
 pre code .number {
     color: #FFB30F; /* Amber for numbers */
 }
 
-/* Function names (example) */
 pre code .function {
     color: #FF5555; /* Red for functions */
 }
 
+/* Error message styling */
 .error-message {
     color: #ff6b6b;
     font-style: italic;
@@ -443,11 +414,13 @@ pre code .function {
     76%, 100% { opacity: 0.7; }
 }
 
+/* Input area styling */
 #input-area {
     display: flex;
     border-top: 1px solid var(--border-color);
     padding: 15px 20px;
     background-color: var(--input-bg);
+    position: relative;
 }
 
 #user-input {
@@ -465,11 +438,14 @@ pre code .function {
     caret-shape: block;
 }
 
+<<<<<<< HEAD
 #user-input:focus {
     border-color: var (--text-color);
     box-shadow: 0 0 8px var(--glow-color);
 }
 
+=======
+>>>>>>> debuggin
 #send-button {
     background-color: var(--background-color);
     color: var(--text-color);
@@ -495,6 +471,7 @@ pre code .function {
     opacity: 0.6;
 }
 
+/* Status bar styling */
 #status-bar {
     display: flex;
     justify-content: space-between;
@@ -551,19 +528,33 @@ pre code .function {
     }
 }
 
-/* Adding styles for modern features */
-
 /* Typing cursor animation */
-.typing-cursor {
+/* .typing-cursor {
     display: inline-block;
     vertical-align: middle;
     animation: cursor-blink 1s step-end infinite;
     margin-left: 2px;
-}
-
+} */
+/* 
 @keyframes cursor-blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
+} */
+
+/* Typing cursor styling */
+.typing-cursor {
+    display: inline-block;
+    width: 0.6em;
+    height: 1em;
+    background-color: var(--text-color);
+    margin-left: 0.2em;
+    vertical-align: text-bottom;
+    animation: cursorBlink 1s infinite;
+}
+
+@keyframes cursorBlink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
 }
 
 /* Code block container with copy button */
@@ -662,8 +653,7 @@ th {
     100% { content: "PROCESSING..."; }
 }
 
-/* History panel styles */
-
+/* Terminal button styling */
 .terminal-button {
     background-color: var(--input-bg);
     color: var(--text-color);
@@ -677,9 +667,10 @@ th {
 
 .terminal-button:hover {
     background-color: var(--text-color);
-    color: var(--background-color);
+    color: var (--background-color);
 }
 
+/* History panel styles */
 .history-panel {
     position: absolute;
     top: 50px;
@@ -782,16 +773,15 @@ th {
     opacity: 0.5;
     margin: 4px 0;  /* Reduce separator spacing */
     width: 80%;
-    color: white
 }
 
-/* Add styles for rendered images */
+/* Rendered image styling */
 .rendered-image {
-    max-width: 80%; /* Limit image size */
+    max-width: 80%;
     height: auto;
-    display: block; /* Ensure it's on its own line */
-    margin: 10px 0; /* Add some spacing */
-    border: 1px solid var(--border-color); /* Optional border */
+    display: block;
+    margin: 10px 0;
+    border: 1px solid var(--border-color);
 }
 
 /* Boot sequence styling */
@@ -808,22 +798,6 @@ th {
     background: none;
     border: none;
     color: inherit;
-}
-
-/* Style for header buttons */
-#new-chat-button-header, #history-button {
-    background-color: var(--background-color);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    padding: 4px 8px;
-    margin-right: 10px;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-#new-chat-button-header:hover, #history-button:hover {
-    background-color: var(--text-color);
-    color: var(--background-color);
 }
 
 /* File upload styling */
@@ -861,14 +835,18 @@ th {
 
 #file-preview-container {
     position: absolute;
-    left: 0;
-    bottom: calc(100% + 5px); /* Position it right above the input box with less space */
-    width: calc(100% - 20px); /* Match width with the input area minus padding */
+    left: 20px;
+    bottom: calc(100% + 5px);
+    width: calc(100% - 40px);
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
     padding: 5px;
     z-index: 100;
-    display: none; /* Hidden by default */
+    display: none;
+    flex-wrap: wrap;
+    gap: 5px;
+    max-height: 100px;
+    overflow-y: auto;
 }
 
 .file-preview {
@@ -912,7 +890,7 @@ th {
     border: 1px solid var(--border-color);
 }
 
-/* Add these new styles */
+/* History buttons */
 .history-buttons-container {
     display: flex;
     justify-content: space-between;
@@ -922,7 +900,7 @@ th {
 
 .delete-all {
     background-color: var(--input-bg);
-    color: #FF5555; /* Red for delete button */
+    color: #FF5555;
     border-color: #FF5555;
 }
 
@@ -931,124 +909,148 @@ th {
     color: var(--background-color);
 }
 
-/* Make sure the buttons in the container take appropriate width */
 .history-buttons-container .terminal-button {
     width: 48%;
 }
 
-/* Mobile-first responsive design enhancements */
-@media screen and (max-width: 768px) {
-  html, body {
-    font-size: 16px; /* Smaller base font size on mobile */
-  }
-  
-  #terminal-header {
-    padding: 8px 12px;
+/* Common styles for side panels */
+.side-panel {
+    position: absolute;
+    top: 51px;
+    right: 0;
+    width: 350px;
+    max-width: 90%;
+    height: calc(100vh - 51px);
+    max-height: calc(100vh - 51px);
+    background-color: var(--input-bg);
+    border-left: 1px solid var(--border-color);
+    z-index: 100;
+    display: flex;
     flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  #terminal-controls {
-    margin-top: 8px;
-    width: 100%;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(100%);
+}
+
+.side-panel[style*="display: flex"] {
+    transform: translateX(0);
+}
+
+.panel-header {
+    display: flex;
     justify-content: space-between;
-  }
-  
-  #terminal-title {
-    font-size: 16px;
-  }
-  
-  .theme-selector {
-    font-size: 12px;
-    padding: 4px 8px;
-  }
-  
-  #chat-output {
+    align-items: center;
     padding: 10px 15px;
-  }
-  
-  #input-area {
-    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--background-color);
+    flex-shrink: 0;
+}
+
+.panel-header span {
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.close-panel-button {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+}
+
+.close-panel-button:hover {
+    color: #FF5555;
+}
+
+.panel-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-color) var(--input-bg);
+}
+
+.panel-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+    background: var(--input-bg);
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+    background-color: var(--text-color);
+    border: 1px solid var(--input-bg);
+}
+
+.panel-buttons {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--background-color);
+    flex-shrink: 0;
+}
+
+.panel-buttons .terminal-button {
+    width: 48%;
+    padding: 8px 10px;
+}
+
+/* Settings Panel Specific Styles */
+.settings-content {
+    display: flex;
     flex-direction: column;
-  }
-  
-  #user-input {
-    margin-right: 0;
-    margin-bottom: 10px;
+    gap: 15px;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.setting-item label {
+    margin-bottom: 5px;
+    /* font-weight: bold; */
+    /* opacity: 0.8; */
+}
+
+.setting-item input[type="text"],
+.setting-item input[type="number"],
+.setting-item textarea {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    border-radius: 0;
     width: 100%;
     box-sizing: border-box;
-  }
-  
-  #send-button {
+}
+
+.setting-item input:focus,
+.setting-item textarea:focus {
+    border-color: var(--text-color);
+    box-shadow: 0 0 5px var(--glow-color);
+}
+
+.setting-item textarea {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.4;
+}
+
+.settings-buttons-container .terminal-button {
     width: 100%;
-    padding: 8px;
-  }
-  
-  /* Fix action buttons spacing on mobile */
-  .message-actions {
-    flex-wrap: wrap;
-    gap: 5px;
-  }
-  
-  /* Fix history panel positioning for mobile */
-  .history-panel {
-    width: 90%;
-    right: 5%;
-    left: 5%;
-  }
-  
-  /* Make file upload more mobile-friendly */
-  #file-upload-container {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    z-index: 5;
-  }
-  
-  /* Adjust file preview container position */
-  #file-preview-container {
-    width: calc(100% - 20px);
-    left: 10px;
-    max-height: 150px;
-    overflow-y: auto;
-  }
 }
 
-/* Tablet-specific adjustments */
-@media screen and (min-width: 769px) and (max-width: 1024px) {
-  html, body {
-    font-size: 18px;
-  }
-}
-
-/* Fix input area layout for mobile */
-@media screen and (max-width: 768px) {
-  #input-area {
-    display: grid;
-    grid-template-areas:
-      "input input"
-      "upload send";
-    grid-template-columns: auto 1fr;
-    grid-gap: 10px;
-    padding: 10px;
-  }
-  
-  #user-input {
-    grid-area: input;
-    margin: 0 0 10px 0;
-  }
-  
-  #file-upload-container {
-    grid-area: upload;
-    position: relative;
-    margin: 0;
-  }
-  
-  #send-button {
-    grid-area: send;
-    margin: 0;
-  }
-}
 
 /* Add this to your existing CSS */
 
@@ -1097,6 +1099,7 @@ th {
   }
 }
 
+<<<<<<< HEAD
 /* Message content spacing */
 .message-content {
     line-height: 1.2;  /* Reduce line height */
@@ -1107,4 +1110,213 @@ th {
 pre {
     margin: 4px 0;  /* Reduce margin */
     line-height: 1.2;  /* Tighter line height for code */
+=======
+/* Common styles for side panels (History & Settings) */
+.side-panel {
+    position: absolute;
+    top: 51px; /* Below header */
+    right: 0;
+    width: 350px; /* Slightly wider */
+    max-width: 90%; /* Max width on smaller screens */
+    height: calc(100vh - 51px); /* Full height below header */
+    max-height: calc(100vh - 51px);
+    background-color: var(--input-bg);
+    border-left: 1px solid var(--border-color);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease-in-out; /* Add transition */
+    transform: translateX(100%); /* Start off-screen */
+}
+
+.side-panel[style*="display: flex"] {
+    transform: translateX(0); /* Slide in */
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--background-color); /* Header background */
+    flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.panel-header span {
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.close-panel-button {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+}
+
+.close-panel-button:hover {
+    color: #FF5555; /* Red on hover */
+}
+
+.panel-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-color) var(--input-bg);
+}
+
+.panel-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+    background: var(--input-bg);
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+    background-color: var(--text-color);
+    border: 1px solid var (--input-bg);
+}
+
+.panel-buttons {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--background-color); /* Footer background */
+    flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+.panel-buttons .terminal-button {
+    width: 48%; /* Adjust button width */
+    padding: 8px 10px; /* Adjust padding */
+}
+
+/* Specific History Panel Styles (adjust if needed) */
+.history-panel {
+    /* Keep specific styles if any */
+}
+
+.history-list {
+    /* Keep specific styles if any */
+}
+
+.history-item {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: default; /* Change cursor if items aren't clickable directly */
+}
+
+.history-item:hover {
+    background-color: rgba(255, 255, 255, 0.05); /* Subtle hover */
+}
+
+/* Settings Panel Specific Styles */
+.settings-panel {
+    /* Specific styles if needed */
+}
+
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between setting items */
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.setting-item label {
+    margin-bottom: 5px;
+    /* font-weight: bold; */
+    opacity: 0.9;
+}
+
+.setting-item input[type="text"],
+.setting-item input[type="number"],
+.setting-item textarea {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 14px; /* Slightly smaller font for settings */
+    outline: none;
+    border-radius: 0;
+    width: 100%;
+    box-sizing: border-box; /* Include padding in width */
+}
+
+.setting-item input:focus,
+.setting-item textarea:focus {
+    border-color: var(--text-color);
+    box-shadow: 0 0 5px var(--glow-color);
+}
+
+.setting-item textarea {
+    resize: vertical; /* Allow vertical resize */
+    min-height: 100px; /* Minimum height for prompt */
+    line-height: 1.4;
+}
+
+.settings-buttons-container .terminal-button {
+    width: 100%; /* Save button takes full width */
+}
+
+/* Adjust header controls layout */
+#terminal-controls {
+    gap: 5px; /* Reduce gap */
+}
+
+.header-button {
+    padding: 4px 8px; /* Smaller padding for header buttons */
+    font-size: 16px; /* Smaller font size */
+}
+
+/* Ensure select wrapper aligns well */
+.select-wrapper {
+    margin-left: 5px; /* Add some space before theme selector */
+}
+
+/* Responsive adjustments for panels */
+@media screen and (max-width: 768px) {
+    .side-panel {
+        width: 95%; /* Wider on mobile */
+        top: 45px; /* Adjust if header height changes */
+        height: calc(100vh - 45px);
+        max-height: calc(100vh - 45px);
+        border-left: none; /* No left border on mobile */
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); /* Shadow below */
+    }
+
+    .panel-header {
+        padding: 8px 12px;
+    }
+
+    .panel-content {
+        padding: 12px;
+    }
+
+    .panel-buttons {
+        padding: 8px 12px;
+    }
+
+    .panel-buttons .terminal-button {
+        padding: 6px 8px;
+    }
+
+    .setting-item input,
+    .setting-item textarea {
+        font-size: 13px;
+    }
+>>>>>>> debuggin
 }

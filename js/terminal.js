@@ -50,8 +50,9 @@ class RetroTerminal {
         });
 
         this.initializeEventListeners();
-        this.initializeTerminal();
-        this.initializeHistory(); // Add this line to initialize history functionality
+        this.initializeHeaderControls(); // Changed from initializeTerminal
+        this.initializeHistoryPanel(); // Renamed for clarity
+        this.initializeSettingsPanel(); // Add this line
         this.initializeFileUpload();
         
         // Auto-save chat when window is closed
@@ -61,6 +62,40 @@ class RetroTerminal {
         
         // Auto-save chat periodically
         setInterval(() => this.saveCurrentChat(), 60000);
+    }
+
+    // New method to save last conversation timestamp
+    saveLastConversationTimestamp() {
+        localStorage.setItem('lastConversationTime', new Date().toISOString());
+    }
+
+    // New method to get time elapsed since last conversation
+    getTimeSinceLastConversation() {
+        const lastTime = localStorage.getItem('lastConversationTime');
+        if (!lastTime) return null;
+        
+        const lastDate = new Date(lastTime);
+        const currentDate = new Date();
+        const diffMs = currentDate - lastDate;
+        
+        // Calculate time differences
+        const seconds = Math.floor(diffMs / 1000);
+        if (seconds < 60) return `${seconds} seconds`;
+        
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''}`;
+        
+        const days = Math.floor(hours / 24);
+        if (days < 30) return `${days} day${days !== 1 ? 's' : ''}`;
+        
+        const months = Math.floor(days / 30);
+        if (months < 12) return `${months} month${months !== 1 ? 's' : ''}`;
+        
+        const years = Math.floor(months / 12);
+        return `${years} year${years !== 1 ? 's' : ''}`;
     }
 
     // Initialize event listeners
@@ -93,33 +128,55 @@ class RetroTerminal {
         });
     }
 
-    // Initialize the terminal with boot sequence
-    initializeTerminal() {
+    // Renamed and updated to handle all header buttons
+    initializeHeaderControls() {
         // First, save the existing content if there's any real conversation
         if (this.chatOutput && this.chatOutput.querySelectorAll('.user-message').length > 0) {
             this.saveCurrentChat();
         }
-        
-        // Add NEW CHAT button to terminal header
+
         const controlsDiv = document.querySelector('#terminal-controls');
-        
+        controlsDiv.innerHTML = ''; // Clear existing controls first
+
+        // Add NEW CHAT button
         const newChatButton = document.createElement('button');
         newChatButton.id = 'new-chat-button-header';
-        newChatButton.className = 'terminal-button';
+        newChatButton.className = 'header-button'; // Simplified class name
         newChatButton.textContent = 'NEW CHAT';
         newChatButton.onclick = () => this.startNewChat();
-        
-        // Add it before the theme selector
-        controlsDiv.insertBefore(newChatButton, controlsDiv.firstChild);
-        
-        // Create initial boot prompt
+        controlsDiv.appendChild(newChatButton);
+
+        // Add HISTORY button
+        const historyButton = document.createElement('button');
+        historyButton.id = 'history-button';
+        historyButton.className = 'header-button'; // Simplified class name
+        historyButton.textContent = 'HISTORY';
+        historyButton.onclick = () => this.toggleHistoryPanel();
+        controlsDiv.appendChild(historyButton);
+
+        // Add SETTINGS button
+        const settingsButton = document.createElement('button');
+        settingsButton.id = 'settings-button';
+        settingsButton.className = 'header-button'; // Simplified class name
+        settingsButton.textContent = 'SETTINGS';
+        settingsButton.onclick = () => this.toggleSettingsPanel();
+        controlsDiv.appendChild(settingsButton);
+
+        // Add Theme Selector (keeping existing structure)
+        const themeWrapper = document.createElement('div');
+        themeWrapper.className = 'select-wrapper';
+        themeWrapper.appendChild(this.themeSelector); // Use the existing selector
+        controlsDiv.appendChild(themeWrapper);
+
+
+        // Create initial boot prompt (moved from initializeTerminal)
         const bootPrompt = document.createElement('div');
         bootPrompt.className = 'message bot-message';
         bootPrompt.innerHTML = 'SYSTEM: Terminal ready. <button id="boot-system" style="background-color: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color); cursor: pointer; padding: 5px 10px; font-family: inherit;">INITIALIZE SYSTEM</button>';
-        
+
         this.chatOutput.innerHTML = ''; // Clear existing messages
         this.chatOutput.appendChild(bootPrompt);
-        
+
         // Setup boot sequence to run after button click
         document.getElementById('boot-system').addEventListener('click', () => {
             this.bootSystem();
@@ -147,14 +204,14 @@ class RetroTerminal {
         const bootSteps = [
             "BIOS v3.2.1 - Initializing memory...",
             "Memory check: 640K OK",
-            "Loading GEMINI/OS v2.5...",
-            "GEMINI Kernel loaded.",
+            `Loading ${CONFIG.BOT_NAME}/OS v2.5...`,
+            `${CONFIG.BOT_NAME} Kernel loaded.`,
             "Initializing neural interface...",
             "Network connection: OK",
             "Loading language modules...",
             "Loading creativity engines...",
             "Loading knowledge base...",
-            "GEMINI AI ready for interaction."
+            `${CONFIG.BOT_NAME} AI ready for interaction.`
         ];
         
         // Create a single message with all boot steps
@@ -180,9 +237,14 @@ class RetroTerminal {
                 // Boot sequence complete
                 clearInterval(bootInterval);
                 
-                // Add welcome message as a separate message
+                // Add welcome message as a separate message with cursor
                 setTimeout(() => {
-                    this.addMessage('bot', "Hello! I'm GEMINI. How can I assist you today?");
+                    // Create welcome message element directly
+                    const welcomeMsg = document.createElement('div');
+                    welcomeMsg.className = 'message bot-message';
+                    welcomeMsg.innerHTML = `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?<span class="typing-cursor"></span>`;
+                    this.chatOutput.appendChild(welcomeMsg);
+                    
                     document.getElementById('user-input').disabled = false;
                     document.getElementById('send-button').disabled = false;
                     document.getElementById('status-message').textContent = "READY";
@@ -257,15 +319,15 @@ class RetroTerminal {
             this.typeText(messageContentDiv, content).then(() => {
                 // Don't add separator for boot/welcome messages
                 if (!content.includes('BIOS') && !content.includes('Terminal ready') && 
-                    !content.includes('Memory check') && !content.includes('Loading GEMINI') && 
+                    !content.includes('Memory check') && !content.includes('Loading') && 
                     !content.includes('Initializing') && !content.includes('Network connection') &&
-                    !content.includes('GEMINI Kernel loaded.')&&
+                    !content.includes('Kernel loaded')&&
                     !content.includes('Loading language modules') &&
                     !content.includes('Loading creativity engines') &&
                     !content.includes('Loading knowledge base') &&
-                    !content.includes('GEMINI AI ready') &&
-                    !content.includes('GEMINI/OS') &&
-                    !content.includes("Hello! I'm GEMINI")) {
+                    !content.includes('AI ready') &&
+                    !content.includes('/OS') &&
+                    !content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
                     
                     // Add separator after content is typed and before action buttons
                     messageDiv.appendChild(separator);
@@ -347,8 +409,12 @@ class RetroTerminal {
             .replace(/'/g, "&#039;");
     }
 
-    // Send message to API
+    // Modified sendMessage method to track conversation time
     async sendMessage() {
+        // Add this at the beginning of the method
+        const isFirstMessage = this.chatOutput.querySelectorAll('.user-message').length === 0;
+        
+        // Rest of the existing code...
         const message = this.userInput.value.trim();
         
         // Allow sending just files without text
@@ -365,6 +431,9 @@ class RetroTerminal {
         this.userInput.value = '';
         
         try {
+            // Remove any existing cursor before adding new message
+            this.removeCursors();
+            
             // Create display message with file info
             let displayMessage = message;
             if (this.attachedFiles.length > 0) {
@@ -376,9 +445,32 @@ class RetroTerminal {
             // Add user message to chat
             this.addMessage('user', displayMessage);
             
+            // Add a typing indicator message with cursor
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message bot-message loading-message';
+            loadingMsg.innerHTML = `<span>${CONFIG.BOT_NAME} is thinking</span> <span class="typing-cursor"></span>`;
+            this.chatOutput.appendChild(loadingMsg);
+            this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
+            
             let response;
             
-            // If we have files, process them
+            // If this is the first message of the conversation, add time context
+            if (isFirstMessage) {
+                // Get time since last conversation
+                const timeSinceLastChat = this.getTimeSinceLastConversation();
+                const currentDateTime = new Date().toLocaleString();
+                
+                // Create a context message to send to the API
+                let contextMessage = `Current date and time: ${currentDateTime}.`;
+                if (timeSinceLastChat) {
+                    contextMessage += ` It has been ${timeSinceLastChat} since our last conversation.`;
+                }
+                
+                // Send the context message to the API first
+                await window.geminiAPI.sendMessage(contextMessage, true); // true means don't display this message
+            }
+            
+            // Continue with existing file handling and API calls
             if (this.attachedFiles.length > 0) {
                 // Convert files to appropriate format
                 const filePromises = this.attachedFiles.map(file => {
@@ -404,19 +496,34 @@ class RetroTerminal {
                 const fileData = await Promise.all(filePromises);
                 response = await window.geminiAPI.sendMessageWithFiles(message, fileData);
                 
-                // Clear attached files
+                // Clear attached files and hide preview container AFTER successful processing/sending
                 this.attachedFiles = [];
                 document.getElementById('file-preview-container').innerHTML = '';
-                document.getElementById('file-preview-container').style.display = 'none';
+                document.getElementById('file-preview-container').style.display = 'none'; // Hide it
             } else {
                 // Regular message without files
                 response = await window.geminiAPI.sendMessage(message);
             }
             
+            // Remove the loading message
+            if (loadingMsg.parentNode) {
+                this.chatOutput.removeChild(loadingMsg);
+            }
+            
             // Add response to chat
-            this.addMessage('bot', response);
+            if (response) { // Check if response exists (might not if only files were sent and API doesn't return text)
+                this.addMessage('bot', response);
+            }
+            
+            // Save the timestamp of this conversation
+            this.saveLastConversationTimestamp();
         } catch (error) {
             console.error('Error sending message:', error);
+            // Remove any loading message
+            const loadingMsg = document.querySelector('.loading-message');
+            if (loadingMsg && loadingMsg.parentNode) {
+                this.chatOutput.removeChild(loadingMsg);
+            }
             this.addMessage('error', `Failed to get response: ${error.message}`);
         } finally {
             // Reset processing state
@@ -489,6 +596,13 @@ class RetroTerminal {
             };
 
             typeChunk();
+        }).then(() => {
+            // Ensure cursor is visible after typing completes for the welcome message
+            if (text.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
+                const cursor = document.createElement('span');
+                cursor.className = 'typing-cursor';
+                element.appendChild(cursor);
+            }
         });
     }
 
@@ -561,63 +675,51 @@ class RetroTerminal {
         }
     }
 
-    // Initialize chat history functionality
-    initializeHistory() {
-        // Add a history button to the header
-        const controlsDiv = document.querySelector('#terminal-controls');
-        
-        const historyButton = document.createElement('button');
-        historyButton.id = 'history-button';
-        historyButton.className = 'terminal-button';
-        historyButton.textContent = 'HISTORY';
-        historyButton.onclick = () => this.toggleHistoryPanel();
-        
-        controlsDiv.appendChild(historyButton);
-        
+    // Renamed from initializeHistory
+    initializeHistoryPanel() {
         // Create history panel (hidden initially)
         const historyPanel = document.createElement('div');
         historyPanel.id = 'history-panel';
-        historyPanel.className = 'history-panel';
+        historyPanel.className = 'side-panel history-panel'; // Added common class
         historyPanel.style.display = 'none';
-        
+
         const historyHeader = document.createElement('div');
-        historyHeader.className = 'history-header';
-        historyHeader.innerHTML = '<span>CHAT HISTORY</span><button id="close-history">X</button>';
-        
+        historyHeader.className = 'panel-header'; // Common class
+        historyHeader.innerHTML = '<span>CHAT HISTORY</span><button class="close-panel-button" data-panel="history-panel">X</button>';
+
         const historyList = document.createElement('div');
         historyList.id = 'history-list';
-        historyList.className = 'history-list';
-        
+        historyList.className = 'panel-content history-list'; // Common class
+
         const buttonsContainer = document.createElement('div');
-        buttonsContainer.className = 'history-buttons-container';
-        
+        buttonsContainer.className = 'panel-buttons history-buttons-container'; // Common class
+
         const newChatButton = document.createElement('button');
         newChatButton.id = 'new-chat-button';
         newChatButton.className = 'terminal-button';
         newChatButton.textContent = 'NEW CHAT';
         newChatButton.onclick = () => this.startNewChat();
-        
-        // Add new "DELETE ALL" button
+
         const deleteAllButton = document.createElement('button');
         deleteAllButton.id = 'delete-all-button';
         deleteAllButton.className = 'terminal-button delete-all';
         deleteAllButton.textContent = 'DELETE ALL';
         deleteAllButton.onclick = () => this.deleteAllChats();
-        
+
         buttonsContainer.appendChild(newChatButton);
         buttonsContainer.appendChild(deleteAllButton);
-        
+
         historyPanel.appendChild(historyHeader);
         historyPanel.appendChild(historyList);
         historyPanel.appendChild(buttonsContainer);
-        
+
         document.querySelector('#crt-container').appendChild(historyPanel);
-        
-        // Add close button listener
-        document.querySelector('#close-history').addEventListener('click', () => {
-            document.querySelector('#history-panel').style.display = 'none';
+
+        // Add close button listener using event delegation
+        historyHeader.querySelector('.close-panel-button').addEventListener('click', (e) => {
+            this.toggleHistoryPanel(); // Use the toggle function
         });
-        
+
         // Load saved chats
         this.loadSavedChats();
     }
@@ -625,7 +727,12 @@ class RetroTerminal {
     // Toggle history panel visibility
     toggleHistoryPanel() {
         const panel = document.querySelector('#history-panel');
+        const settingsPanel = document.querySelector('#settings-panel');
         if (panel.style.display === 'none') {
+             // Hide settings panel if open
+            if (settingsPanel.style.display !== 'none') {
+                settingsPanel.style.display = 'none';
+            }
             panel.style.display = 'flex';
             this.loadSavedChats(); // Refresh the list when opening
         } else {
@@ -664,7 +771,7 @@ class RetroTerminal {
                 const content = msg.querySelector('.message-content')?.textContent || msg.textContent;
                 
                 // Skip welcome message
-                if (content.includes("Hello! I'm GEMINI") || 
+                if (content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`) || 
                     content.includes("Terminal online") || 
                     content.includes("Awaiting input")) {
                     return;
@@ -840,8 +947,24 @@ class RetroTerminal {
         // Clear chat
         this.chatOutput.innerHTML = '';
         
-        // Add welcome message
-        this.addMessage('bot', "Hello! I'm GEMINI. How can I assist you today?");
+        // Get time context
+        const timeSinceLastChat = this.getTimeSinceLastConversation();
+        const currentDateTime = new Date().toLocaleString();
+        
+        // Create welcome message with time info
+        let welcomeMessage = `Hello! I'm ${CONFIG.BOT_NAME}. I'm here to assist you.`;
+        
+        if (timeSinceLastChat) {
+            welcomeMessage += ` `;
+        }
+        
+        welcomeMessage += " How can I assist you today?";
+        
+        // Add welcome message with cursor
+        this.addMessage('bot', welcomeMessage);
+        
+        // Save this as the last conversation time
+        this.saveLastConversationTimestamp();
         
         // Reset input field
         this.userInput.value = '';
@@ -857,52 +980,241 @@ class RetroTerminal {
     initializeFileUpload() {
         const fileInput = document.getElementById('file-upload');
         const previewContainer = document.getElementById('file-preview-container');
-        
+
         // Handle file selection
         fileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files.length > 0) {
-                // Show the preview container
-                previewContainer.style.display = 'flex';
-                
+                // Show the preview container if it's not already visible
+                if (previewContainer.style.display !== 'flex') {
+                    previewContainer.style.display = 'flex';
+                    // Clear any previous previews when adding new files
+                    previewContainer.innerHTML = '';
+                    this.attachedFiles = []; // Clear the array too
+                }
+
                 // Process each file
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
-                    
-                    // Check file size (20MB limit)
+
+                    // Check file size (e.g., 20MB limit)
                     if (file.size > 20 * 1024 * 1024) {
-                        this.addMessage('error', `File "${file.name}" exceeds 20MB size limit`);
-                        continue;
+                        this.addMessage('error', `File "${file.name}" is too large (max 20MB).`);
+                        continue; // Skip this file
                     }
-                    
-                    // Add to attached files
+
+                    // Add to attached files array
                     this.attachedFiles.push(file);
-                    
+
                     // Create preview element
                     const preview = document.createElement('div');
                     preview.className = 'file-preview';
-                    preview.innerHTML = `
-                        ${file.name}
-                        <span class="file-preview-remove" data-filename="${file.name}">×</span>
-                    `;
-                    
-                    // Add remove functionality
-                    preview.querySelector('.file-preview-remove').addEventListener('click', () => {
-                        this.attachedFiles = this.attachedFiles.filter(f => f.name !== file.name);
-                        preview.remove();
-                        
-                        // Hide container if empty
-                        if (this.attachedFiles.length === 0) {
-                            previewContainer.style.display = 'none';
-                        }
-                    });
-                    
+                    preview.dataset.fileName = file.name; // Store filename for removal
+
+                    // Create remove button
+                    const removeButton = document.createElement('span');
+                    removeButton.className = 'file-preview-remove';
+                    removeButton.innerHTML = '&times;'; // 'x' symbol
+                    removeButton.title = 'Remove file';
+                    removeButton.onclick = () => this.removePreview(file.name);
+
+                    // Set preview content (filename + remove button)
+                    preview.textContent = file.name; // Show filename
+                    preview.appendChild(removeButton); // Add remove button
+
+                    // Append preview to container
                     previewContainer.appendChild(preview);
                 }
             }
-            
-            // Reset input so the same file can be selected again
+
+            // Reset input so the same file can be selected again if needed
             fileInput.value = '';
+        });
+    }
+
+    // NEW or UPDATED: Function to remove a file preview
+    removePreview(fileNameToRemove) {
+        const previewContainer = document.getElementById('file-preview-container');
+
+        // Remove file from the attachedFiles array
+        this.attachedFiles = this.attachedFiles.filter(file => file.name !== fileNameToRemove);
+
+        // Remove the preview element from the DOM
+        const previewElement = previewContainer.querySelector(`.file-preview[data-file-name="${fileNameToRemove}"]`);
+        if (previewElement) {
+            previewContainer.removeChild(previewElement);
+        }
+
+        // Hide the container if no previews are left
+        if (previewContainer.children.length === 0) {
+            previewContainer.style.display = 'none';
+        }
+    }
+
+    // NEW: Initialize Settings Panel
+    initializeSettingsPanel() {
+        const settingsPanel = document.createElement('div');
+        settingsPanel.id = 'settings-panel';
+        settingsPanel.className = 'side-panel settings-panel'; // Added common class
+        settingsPanel.style.display = 'none';
+
+        const settingsHeader = document.createElement('div');
+        settingsHeader.className = 'panel-header'; // Common class
+        settingsHeader.innerHTML = '<span>SETTINGS</span><button class="close-panel-button" data-panel="settings-panel">X</button>';
+
+        const settingsContent = document.createElement('div');
+        settingsContent.id = 'settings-content';
+        settingsContent.className = 'panel-content settings-content'; // Common class
+
+        // Add settings fields
+        settingsContent.innerHTML = `
+            <div class="setting-item">
+                <label for="setting-bot-name">Bot Name:</label>
+                <input type="text" id="setting-bot-name">
+            </div>
+            <div class="setting-item">
+                <label for="setting-system-prompt">System Prompt:</label>
+                <textarea id="setting-system-prompt" rows="8"></textarea>
+            </div>
+            <div class="setting-item">
+                <label for="setting-temperature">Temperature:</label>
+                <input type="number" id="setting-temperature" step="0.1" min="0" max="2.0">
+            </div>
+            <div class="setting-item">
+                <label for="setting-top-k">Top K:</label>
+                <input type="number" id="setting-top-k" step="1" min="1">
+            </div>
+            <div class="setting-item">
+                <label for="setting-top-p">Top P:</label>
+                <input type="number" id="setting-top-p" step="0.05" min="0" max="1">
+            </div>
+             <div class="setting-item">
+                <label for="setting-model">Model:</label>
+                <input type="text" id="setting-model">
+            </div>
+        `;
+
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'panel-buttons settings-buttons-container'; // Common class
+
+        const saveButton = document.createElement('button');
+        saveButton.id = 'save-settings-button';
+        saveButton.className = 'terminal-button';
+        saveButton.textContent = 'SAVE SETTINGS';
+        saveButton.onclick = () => this.saveSettings();
+
+        buttonsContainer.appendChild(saveButton);
+
+        settingsPanel.appendChild(settingsHeader);
+        settingsPanel.appendChild(settingsContent);
+        settingsPanel.appendChild(buttonsContainer);
+
+        document.querySelector('#crt-container').appendChild(settingsPanel);
+
+        // Add close button listener
+         settingsHeader.querySelector('.close-panel-button').addEventListener('click', (e) => {
+            this.toggleSettingsPanel(); // Use the toggle function
+        });
+    }
+
+    // NEW: Toggle Settings Panel
+    toggleSettingsPanel() {
+        const panel = document.querySelector('#settings-panel');
+        const historyPanel = document.querySelector('#history-panel');
+        if (panel.style.display === 'none') {
+            // Hide history panel if open
+            if (historyPanel.style.display !== 'none') {
+                historyPanel.style.display = 'none';
+            }
+            // Populate with current settings
+            document.getElementById('setting-bot-name').value = CONFIG.BOT_NAME || 'Syntra';
+            document.getElementById('setting-system-prompt').value = CONFIG.SYSTEM_PROMPT || '';
+            document.getElementById('setting-temperature').value = CONFIG.TEMPERATURE || 1.0;
+            document.getElementById('setting-top-k').value = CONFIG.TOP_K || 40;
+            document.getElementById('setting-top-p').value = CONFIG.TOP_P || 0.95;
+            document.getElementById('setting-model').value = CONFIG.MODEL || 'gemini-1.5-flash'; // Default if not set
+            panel.style.display = 'flex';
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+
+    // NEW: Save Settings
+    saveSettings() {
+        try {
+            const newBotName = document.getElementById('setting-bot-name').value.trim();
+            const newPrompt = document.getElementById('setting-system-prompt').value;
+            const newTemp = parseFloat(document.getElementById('setting-temperature').value);
+            const newTopK = parseInt(document.getElementById('setting-top-k').value, 10);
+            const newTopP = parseFloat(document.getElementById('setting-top-p').value);
+            const newModel = document.getElementById('setting-model').value.trim();
+
+            // Basic validation
+            if (!newBotName) {
+                alert("Bot name cannot be empty.");
+                return;
+            }
+            if (isNaN(newTemp) || newTemp < 0 || newTemp > 2.0) {
+                alert("Invalid Temperature value. Must be between 0.0 and 2.0.");
+                return;
+            }
+            if (isNaN(newTopK) || newTopK < 1) {
+                alert("Invalid Top K value. Must be 1 or greater.");
+                return;
+            }
+            if (isNaN(newTopP) || newTopP < 0 || newTopP > 1.0) {
+                alert("Invalid Top P value. Must be between 0.0 and 1.0.");
+                return;
+            }
+            if (!newModel) {
+                alert("Model name cannot be empty.");
+                return;
+            }
+
+            // Update the global CONFIG object
+            CONFIG.BOT_NAME = newBotName;
+            CONFIG.SYSTEM_PROMPT = newPrompt;
+            CONFIG.TEMPERATURE = newTemp;
+            CONFIG.TOP_K = newTopK;
+            CONFIG.TOP_P = newTopP;
+            CONFIG.MODEL = newModel;
+
+            // Save to localStorage
+            if (typeof saveConfigToStorage === 'function') {
+                saveConfigToStorage();
+            } else {
+                localStorage.setItem('geminiConfig', JSON.stringify(CONFIG));
+            }
+
+            // Optionally: Notify the API handler if it needs explicit updates
+            if (window.geminiAPI && typeof window.geminiAPI.updateSettings === 'function') {
+                window.geminiAPI.updateSettings(CONFIG);
+                console.log("Gemini API settings updated.");
+            } else {
+                console.log("Global CONFIG updated. API will use new settings on next call.");
+            }
+
+            document.getElementById('status-message').textContent = "SETTINGS SAVED";
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = "READY";
+            }, 2000);
+
+            this.toggleSettingsPanel(); // Close panel after saving
+
+        } catch (error) {
+            console.error("Error saving settings:", error);
+            this.addMessage('error', 'Failed to save settings. Check console.');
+            document.getElementById('status-message').textContent = "SAVE FAILED";
+        }
+    }
+
+    // Add this helper method to remove all cursors from the chat
+    removeCursors() {
+        const cursors = this.chatOutput.querySelectorAll('.typing-cursor');
+        cursors.forEach(cursor => {
+            if (cursor.parentNode) {
+                cursor.parentNode.removeChild(cursor);
+            }
         });
     }
 }
