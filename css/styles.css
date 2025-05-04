@@ -16,26 +16,6 @@ html, body {
     overflow: hidden;
 }
 
-<<<<<<< HEAD
-/* Optimize the text shadow for better clarity */
-.message {
-    margin: 4px 0;  /* Reduce from default spacing */
-    text-shadow: 0 0 4px var(--glow-color);
-    /* Reduce flicker effect for better readability */
-    animation: textFlicker 0.5s infinite alternate;
-    animation-play-state: paused; 
-    line-height: 1.2;  /* Tighter line height */
-}
-
-/* Adjust text line height for better reading */
-.bot-message {
-    display: block;
-    line-height: 1.15; /* Slightly increased for readability but still compact */
-    margin-bottom: 6px;  /* Reduce space between messages */
-}
-
-/* Improve contrast and readability without losing retro feel */
-=======
 /* Web font for more authentic terminal look */
 @font-face {
     font-family: 'VT323';
@@ -47,7 +27,6 @@ html, body {
 }
 
 /* Theme color variables */
->>>>>>> debuggin
 :root {
     /* Default Theme: Amber - increased contrast */
     --background-color: #111111; 
@@ -248,36 +227,12 @@ html, body {
     border: 2px solid var(--input-bg);
 }
 
-<<<<<<< HEAD
-/* Fix spacing in bot messages */
-.bot-message {
-    white-space: pre-wrap;
-    line-height: 1; /* Reduce line height to minimum */
-    margin-bottom: 6px;  /* Reduce space between messages */
-}
-
-/* Remove extra margins from paragraphs */
-.bot-message p {
-    margin: 0;
-    padding: 0;
-}
-
-/* Eliminate extra space between elements */
-.bot-message * {
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-/* Make the message text more compact */
-=======
 /* Message styling */
->>>>>>> debuggin
 .message {
-    margin: 4px 0;  /* Reduce from default spacing */
+    margin-bottom: 8px;
     text-shadow: 0 0 4px var(--glow-color);
     animation: textFlicker 0.5s infinite alternate;
     animation-play-state: paused; 
-    line-height: 1.2;  /* Tighter line height */
 }
 
 .message:hover {
@@ -294,20 +249,13 @@ html, body {
     border-left: 2px solid var(--text-color);
     padding-left: 10px;
     opacity: 0.9; /* Slightly dim user messages compared to bot responses */
-    margin-bottom: 6px;  /* Reduce space between messages */
 }
 
 /* Bot message styling - FIXED to avoid duplicate/conflicting styles */
 .bot-message {
-<<<<<<< HEAD
-    white-space: pre-wrap;
-    line-height: 1.15; /* Slightly increased for readability but still compact */
-    margin-bottom: 6px;  /* Reduce space between messages */
-=======
     white-space: pre-wrap; /* Keep to respect line breaks */
     line-height: 1.15; /* Consistent line height */
     margin-bottom: 8px;
->>>>>>> debuggin
 }
 
 /* Clear and consistent paragraph styling */
@@ -438,14 +386,6 @@ pre code .function {
     caret-shape: block;
 }
 
-<<<<<<< HEAD
-#user-input:focus {
-    border-color: var (--text-color);
-    box-shadow: 0 0 8px var(--glow-color);
-}
-
-=======
->>>>>>> debuggin
 #send-button {
     background-color: var(--background-color);
     color: var(--text-color);
@@ -560,7 +500,7 @@ pre code .function {
 /* Code block container with copy button */
 .code-block-container {
     position: relative;
-    margin: 4px 0;  /* Reduce margin around code blocks */
+    margin: 8px 0;
 }
 
 .copy-button {
@@ -613,7 +553,7 @@ th {
 .message-actions {
     display: flex;
     justify-content: flex-end;
-    margin-top: 4px;  /* Reduce space above buttons */
+    margin-top: 5px;
     opacity: 0;
     transition: opacity 0.2s;
 }
@@ -771,7 +711,7 @@ th {
         transparent
     );
     opacity: 0.5;
-    margin: 4px 0;  /* Reduce separator spacing */
+    margin: 20px 10%;
     width: 80%;
 }
 
@@ -1099,18 +1039,6 @@ th {
   }
 }
 
-<<<<<<< HEAD
-/* Message content spacing */
-.message-content {
-    line-height: 1.2;  /* Reduce line height */
-    margin: 4px 0;  /* Reduce vertical margins */
-}
-
-/* Pre/code block spacing */
-pre {
-    margin: 4px 0;  /* Reduce margin */
-    line-height: 1.2;  /* Tighter line height for code */
-=======
 /* Common styles for side panels (History & Settings) */
 .side-panel {
     position: absolute;
@@ -1318,5 +1246,4 @@ pre {
     .setting-item textarea {
         font-size: 13px;
     }
->>>>>>> debuggin
 }
