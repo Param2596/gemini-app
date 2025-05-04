@@ -205,7 +205,12 @@ class RetroTerminal {
                 
                 // Add welcome message as a separate message with cursor
                 setTimeout(() => {
-                    this.addMessage('bot', `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?`);
+                    // Create welcome message element directly
+                    const welcomeMsg = document.createElement('div');
+                    welcomeMsg.className = 'message bot-message';
+                    welcomeMsg.innerHTML = `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?<span class="typing-cursor"></span>`;
+                    this.chatOutput.appendChild(welcomeMsg);
+                    
                     document.getElementById('user-input').disabled = false;
                     document.getElementById('send-button').disabled = false;
                     document.getElementById('status-message').textContent = "READY";
@@ -501,7 +506,7 @@ class RetroTerminal {
     }
 
     // Update typeText to properly handle markdown chunks
-        typeText(element, text, speed = 10, chunkDelay = 200) {
+    typeText(element, text, speed = 10, chunkDelay = 200) {
         return new Promise(resolve => {
             // Clear the element first
             element.innerHTML = '';
@@ -564,6 +569,13 @@ class RetroTerminal {
             };
     
             typeChunk();
+        }).then(() => {
+            // Ensure cursor is visible after typing completes for the welcome message
+            if (text.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
+                const cursor = document.createElement('span');
+                cursor.className = 'typing-cursor';
+                element.appendChild(cursor);
+            }
         });
     }
 
