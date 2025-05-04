@@ -203,7 +203,7 @@ class RetroTerminal {
                 // Boot sequence complete
                 clearInterval(bootInterval);
                 
-                // Add welcome message as a separate message
+                // Add welcome message as a separate message with cursor
                 setTimeout(() => {
                     this.addMessage('bot', `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?`);
                     document.getElementById('user-input').disabled = false;
@@ -410,6 +410,9 @@ class RetroTerminal {
         this.userInput.value = '';
         
         try {
+            // Remove any existing cursor before adding new message
+            this.removeCursors();
+            
             // Create display message with file info
             let displayMessage = message;
             if (this.attachedFiles.length > 0) {
@@ -420,6 +423,13 @@ class RetroTerminal {
             
             // Add user message to chat
             this.addMessage('user', displayMessage);
+            
+            // Add a typing indicator message with cursor
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message bot-message loading-message';
+            loadingMsg.innerHTML = `<span>${CONFIG.BOT_NAME} is thinking</span> <span class="typing-cursor"></span>`;
+            this.chatOutput.appendChild(loadingMsg);
+            this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
             
             let response;
             
@@ -458,12 +468,22 @@ class RetroTerminal {
                 response = await window.geminiAPI.sendMessage(message);
             }
             
+            // Remove the loading message
+            if (loadingMsg.parentNode) {
+                this.chatOutput.removeChild(loadingMsg);
+            }
+            
             // Add response to chat
             if (response) { // Check if response exists (might not if only files were sent and API doesn't return text)
-                 this.addMessage('bot', response);
+                this.addMessage('bot', response);
             }
         } catch (error) {
             console.error('Error sending message:', error);
+            // Remove any loading message
+            const loadingMsg = document.querySelector('.loading-message');
+            if (loadingMsg && loadingMsg.parentNode) {
+                this.chatOutput.removeChild(loadingMsg);
+            }
             this.addMessage('error', `Failed to get response: ${error.message}`);
         } finally {
             // Reset processing state
@@ -888,7 +908,7 @@ class RetroTerminal {
         // Clear chat
         this.chatOutput.innerHTML = '';
         
-        // Add welcome message
+        // Add welcome message with cursor
         this.addMessage('bot', `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?`);
         
         // Reset input field
@@ -1131,5 +1151,15 @@ class RetroTerminal {
             this.addMessage('error', 'Failed to save settings. Check console.');
             document.getElementById('status-message').textContent = "SAVE FAILED";
         }
+    }
+
+    // Add this helper method to remove all cursors from the chat
+    removeCursors() {
+        const cursors = this.chatOutput.querySelectorAll('.typing-cursor');
+        cursors.forEach(cursor => {
+            if (cursor.parentNode) {
+                cursor.parentNode.removeChild(cursor);
+            }
+        });
     }
 }
