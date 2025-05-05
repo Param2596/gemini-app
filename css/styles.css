@@ -1083,11 +1083,11 @@ th {
 
   /* Let chat grow and push input area to bottom */
   #chat-container {
-    position: absolute;
-    top: 51px;      /* header height + border */
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: relative;
+    flex: 1;      /* header height + border */
+    margin-top: 0;
+    height: auto;
+    width: 100%;
   }
   #chat-output {
     position: absolute;
