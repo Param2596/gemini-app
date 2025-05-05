@@ -1100,7 +1100,7 @@ th {
   }
   #status-bar {
     position: fixed;
-    bottom: 56px;  /* matches input-area height */
+    bottom: 62px;  /* matches input-area height */
     left: 0;
     right: 0;
     z-index: 6;
