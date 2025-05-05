@@ -263,17 +263,18 @@ class RetroTerminal {
     }
 
     // Add a message to the chat
-    addMessage(type, content) {
-        // Remove the separator code from here (we'll add it after typing completes)
-
+    addMessage(type, content, isFromHistory = false) {
         const messageDiv = document.createElement('div');
+        // Store raw markdown/text for history reloads
+        messageDiv.dataset.rawContent = content;
         messageDiv.className = `message ${type}-message`;
-
+    
         if (type === 'user') {
             messageDiv.textContent = `YOU: ${content}`;
             this.chatOutput.appendChild(messageDiv);
             this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
         } else if (type === 'error') {
+            // Error message handling (unchanged)
             messageDiv.className = 'message error-message';
             messageDiv.textContent = `ERROR: ${content}`;
             this.chatOutput.appendChild(messageDiv);
@@ -282,88 +283,142 @@ class RetroTerminal {
             // Bot message container
             const messageContentDiv = document.createElement('div');
             messageContentDiv.className = 'message-content';
-            // --- RENDER MARKDOWN ONCE ---
-            const renderedHtml = this.renderMarkdown(content); // Render full HTML here
-
-            // Create separator (but don't add it yet)
-            const separator = document.createElement('div');
-            separator.className = 'message-separator';
-
-            // Add message actions
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'message-actions';
-
-            // Copy button (copies original plain text)
-            const copyButton = document.createElement('button');
-            copyButton.className = 'message-action-button';
-            copyButton.textContent = 'COPY';
-            copyButton.onclick = () => this.copyToClipboard(content); // Copy original text
-
-            // Regenerate button
-            const regenerateButton = document.createElement('button');
-            regenerateButton.className = 'message-action-button';
-            regenerateButton.textContent = 'REGENERATE';
-            regenerateButton.onclick = () => this.regenerateResponse();
-
-            // Add buttons to actions
-            actionsDiv.appendChild(copyButton);
-            actionsDiv.appendChild(regenerateButton);
-
-            // Append content div to message
+            
+            // Add message content div to parent message div
             messageDiv.appendChild(messageContentDiv);
-
-            // Add to chat
+            
+            // Add to chat container
             this.chatOutput.appendChild(messageDiv);
-            this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
-
-            // --- Start typing animation with MARKDOWN CHUNKS, then wrap ---
-            this.typeText(messageContentDiv, content).then(() => { // *** Use typeText here ***
-                // --- Wrap code blocks using DOM manipulation AFTER full render ---
-                // (The existing wrapping logic stays here)
+            
+            if (isFromHistory) {
+                // For messages from history, render markdown directly
+                messageContentDiv.innerHTML = this.renderMarkdown(content);
+                
+                // Process code blocks for history messages
                 const preElements = messageContentDiv.querySelectorAll('pre');
                 preElements.forEach(preElement => {
-                    if (!preElement.closest('.code-block-container')) {
+                    const codeBlock = preElement.querySelector('code');
+                    if (codeBlock) {
+                        // Create container for the code block
                         const container = document.createElement('div');
                         container.className = 'code-block-container';
-
-                        const copyCodeButton = document.createElement('button');
-                        copyCodeButton.className = 'copy-button';
-                        copyCodeButton.textContent = 'COPY';
-                        const codeElement = preElement.querySelector('code');
-                        const codeToCopy = codeElement ? codeElement.textContent : preElement.textContent;
-                        copyCodeButton.onclick = (e) => {
-                            e.stopPropagation();
-                            this.copyToClipboard(codeToCopy);
+                        
+                        // Create copy button
+                        const copyButton = document.createElement('button');
+                        copyButton.className = 'copy-button';
+                        copyButton.textContent = 'COPY';
+                        copyButton.onclick = () => {
+                            const code = codeBlock.textContent;
+                            this.copyToClipboard(code);
                         };
-
+                        
+                        // Wrap the pre element with the container and add the button
                         preElement.parentNode.insertBefore(container, preElement);
-                        container.appendChild(copyCodeButton);
+                        container.appendChild(copyButton);
                         container.appendChild(preElement);
                     }
                 });
-                // --- End Wrap ---
-
-                // Remove any leftover typing cursors (might still be needed if typeText adds one)
-                const cursors = messageContentDiv.querySelectorAll('.typing-cursor');
-                cursors.forEach(c => c.remove());
-
-                // Only add separator and buttons for normal bot messages
+                
+                // Add separator after message (except for welcome/boot messages)
                 if (!content.includes('BIOS') && !content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
-                    // Add message separator
                     const separator = document.createElement('div');
                     separator.className = 'message-separator';
                     messageDiv.appendChild(separator);
                     
-                    // Add actions div with buttons
+                    // Add action buttons
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'message-actions';
+                    
+                    // Copy button
+                    const copyButton = document.createElement('button');
+                    copyButton.className = 'message-action-button';
+                    copyButton.textContent = 'COPY';
+                    copyButton.onclick = () => this.copyToClipboard(content);
+                    
+                    // Regenerate button
+                    const regenerateButton = document.createElement('button');
+                    regenerateButton.className = 'message-action-button';
+                    regenerateButton.textContent = 'REGENERATE';
+                    regenerateButton.onclick = () => this.regenerateResponse();
+                    
+                    // Add buttons to actions
+                    actionsDiv.appendChild(copyButton);
+                    actionsDiv.appendChild(regenerateButton);
+                    
+                    // Add actions to message
                     messageDiv.appendChild(actionsDiv);
                 }
-
-                // Scroll to ensure everything is visible
-                this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
-            });
+            } else {
+                // Existing code for new messages with typing animation
+                this.typeText(messageContentDiv, content).then(() => {
+                    // Process code blocks for new messages
+                    const preElements = messageContentDiv.querySelectorAll('pre');
+                    preElements.forEach(preElement => {
+                        const codeBlock = preElement.querySelector('code');
+                        if (codeBlock) {
+                            // Create container for the code block
+                            const container = document.createElement('div');
+                            container.className = 'code-block-container';
+                            
+                            // Create copy button
+                            const copyButton = document.createElement('button');
+                            copyButton.className = 'copy-button';
+                            copyButton.textContent = 'COPY';
+                            copyButton.onclick = () => {
+                                const code = codeBlock.textContent;
+                                this.copyToClipboard(code);
+                            };
+                            
+                            // Wrap the pre element with the container and add the button
+                            preElement.parentNode.insertBefore(container, preElement);
+                            container.appendChild(copyButton);
+                            container.appendChild(preElement);
+                        }
+                    });
+                    
+                    // Remove any leftover typing cursors
+                    const cursors = messageContentDiv.querySelectorAll('.typing-cursor');
+                    cursors.forEach(c => c.remove());
+                    
+                    // Only add separator and buttons for normal bot messages
+                    if (!content.includes('BIOS') && !content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
+                        const separator = document.createElement('div');
+                        separator.className = 'message-separator';
+                        messageDiv.appendChild(separator);
+                        
+                        // Add action buttons
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.className = 'message-actions';
+                        
+                        // Copy button
+                        const copyButton = document.createElement('button');
+                        copyButton.className = 'message-action-button';
+                        copyButton.textContent = 'COPY';
+                        copyButton.onclick = () => this.copyToClipboard(content);
+                        
+                        // Regenerate button
+                        const regenerateButton = document.createElement('button');
+                        regenerateButton.className = 'message-action-button';
+                        regenerateButton.textContent = 'REGENERATE';
+                        regenerateButton.onclick = () => this.regenerateResponse();
+                        
+                        // Add buttons to actions
+                        actionsDiv.appendChild(copyButton);
+                        actionsDiv.appendChild(regenerateButton);
+                        
+                        // Add actions to message
+                        messageDiv.appendChild(actionsDiv);
+                    }
+                    
+                    // Scroll to ensure everything is visible
+                    this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
+                });
+            }
+            
+            // Scroll to ensure message is visible
+            this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
         }
     }
-
     // Update renderMarkdown to handle cases where Remarkable isn't available
     renderMarkdown(text) {
         if (!this.md) {
@@ -742,51 +797,36 @@ class RetroTerminal {
 
     saveCurrentChat() {
         // Only save if we have messages
-        if (this.chatOutput.querySelectorAll('.message').length < 3) return; // Ignore boot messages
+        if (this.chatOutput.querySelectorAll('.message').length < 3) return; // Ignore boot
 
         const savedChats = JSON.parse(localStorage.getItem('geminiChats') || '[]');
-
-        // Create a chat object
         const chatMessages = [];
         const messages = this.chatOutput.querySelectorAll('.message');
-
         let foundRealConversation = false;
 
         messages.forEach(msg => {
-            // Skip boot messages entirely
-            if (msg.classList.contains('boot-message')) {
-                return;
-            }
+            if (msg.classList.contains('boot-message')) return;
 
             if (msg.classList.contains('user-message')) {
-                // This is a user message - add it and mark that we've started the real conversation
                 foundRealConversation = true;
                 chatMessages.push({
                     role: 'user',
                     content: msg.textContent.replace('YOU: ', '')
                 });
             } else if (msg.classList.contains('bot-message')) {
-                const content = msg.querySelector('.message-content')?.textContent || msg.textContent;
+                // Use rawContent if saved, otherwise fallback
+                const content = msg.dataset.rawContent 
+                    ?? (msg.querySelector('.message-content')?.textContent || msg.textContent);
 
-                // Skip welcome message
-                if (content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`) ||
-                    content.includes("Terminal online") ||
-                    content.includes("Awaiting input")) {
-                    return;
-                }
+                // Skip welcome messages
+                if (content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) return;
 
-                // If we already found a real user message, or this is a substantive bot response
-                // that isn't just the welcome message, include it
                 if (foundRealConversation) {
-                    chatMessages.push({
-                        role: 'bot',
-                        content: content
-                    });
+                    chatMessages.push({ role: 'bot', content });
                 }
             }
         });
 
-        // Only save if we have actual conversation messages (at least one user message)
         if (chatMessages.length < 1) return;
 
         // Use first user message as title, or first few words if very long
@@ -883,17 +923,25 @@ class RetroTerminal {
     loadChat(chatId) {
         const savedChats = JSON.parse(localStorage.getItem('geminiChats') || '[]');
         const chat = savedChats.find(c => c.id === chatId);
-
+        
         if (!chat) return;
-
+        
+        // Set current conversation ID to the loaded chat ID
+        this.currentConversationId = chatId;
+        
         // Clear current chat
         this.chatOutput.innerHTML = '';
-
-        // Load messages
+        
+        // Load messages with isFromHistory flag set to true
         chat.messages.forEach(msg => {
-            this.addMessage(msg.role, msg.content);
+            this.addMessage(msg.role, msg.content, true);
         });
-
+        
+        // Update API history if available
+        if (window.geminiAPI && typeof window.geminiAPI.loadChatHistory === 'function') {
+            window.geminiAPI.loadChatHistory(chat.messages);
+        }
+        
         // Close history panel
         document.querySelector('#history-panel').style.display = 'none';
     }
@@ -927,6 +975,8 @@ class RetroTerminal {
             this.loadSavedChats();
         }
     }
+
+  
 
     // Update startNewChat to save current conversation first
 

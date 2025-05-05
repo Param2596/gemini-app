@@ -19,6 +19,21 @@ class GeminiAPI {
         this.history = [];
     }
 
+          // Add this method to the GeminiAPI class in js/api.js
+    // This should be added after the clearHistory() method
+    
+    loadChatHistory(messages) {
+        // Clear any existing history first
+        this.clearHistory();
+        
+        // Load messages from saved chat
+        messages.forEach(msg => {
+            this.addToHistory(msg.role, msg.content);
+        });
+        
+        console.log("Chat history loaded:", messages.length, "messages");
+    }
+
     async listAvailableModels() {
         try {
             const endpoint = `https://generativelanguage.googleapis.com/v1/models?key=${this.apiKey}`;

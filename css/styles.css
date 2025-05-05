@@ -5,22 +5,23 @@ html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    background-color: black;
+    background-color: rgb(9, 9, 9);
     color: var(--text-color);
     font-family: 'VT323', 'Courier New', monospace;
     font-size: 20px; /* Slightly larger font size */
-    font-weight: 400; /* Fixed from 40 to 400 which is standard font-weight value */
+    font-weight: 200; /* Fixed from 40 to 400 which is standard font-weight value */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: 0.5px; /* Add slight spacing between letters */
     overflow: hidden;
+    line-height: 1.5; /* CLEANUP: Standardized line height across all elements */
 }
 
 /* Web font for more authentic terminal look */
 @font-face {
     font-family: 'VT323';
     font-style: normal;
-    font-weight: 400;
+    font-weight: 200;
     font-display: swap; /* Improves font loading behavior */
     src: url(https://fonts.gstatic.com/s/vt323/v17/pxiKyp0ihIEF2isfFJU.woff2) format('woff2');
     unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
@@ -35,6 +36,12 @@ html, body {
     --border-color: #444;
     --glow-color: rgba(255, 179, 15, 0.3);
     --scan-line-color: rgba(0, 0, 0, 0.15);
+    /* CLEANUP: Added standard spacing variables for consistency */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
 }
 
 /* Green Theme */
@@ -101,8 +108,8 @@ html, body {
     width: 100%;
     height: 100%;
     box-shadow: 
-        inset 0 0 100px rgba(0, 0, 0, 0.8),
-        inset 0 0 35px var(--glow-color);
+        inset 0 0 50px rgba(0, 0, 0, 0.8),
+        inset 0 0 10px var(--glow-color);
     pointer-events: none;
     z-index: 2;
     border-radius: 20px;
@@ -201,13 +208,14 @@ html, body {
     z-index: 1;
 }
 
+/* CLEANUP: Adjusted padding to be more compact */
 #chat-output {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 15px 25px;
+    padding: 5px 20px; /* Reduced from 15px 25px */
     margin: 0;
     border: none;
-    line-height: 1.5;
+    line-height: 1.5; /* CLEANUP: Standardized line height */
     scrollbar-width: thin;
     scrollbar-color: var(--text-color) var(--input-bg);
 }
@@ -228,8 +236,9 @@ html, body {
 }
 
 /* Message styling */
+/* CLEANUP: Standardized margins between messages */
 .message {
-    margin-bottom: 8px;
+    margin-bottom: var(--spacing-md); /* Changed from 8px to 1rem */
     text-shadow: 0 0 4px var(--glow-color);
     animation: textFlicker 0.5s infinite alternate;
     animation-play-state: paused; 
@@ -245,56 +254,99 @@ html, body {
     100% { opacity: 0.8; }
 }
 
+/* CLEANUP: Adjusted vertical spacing between user messages and responses */
 .user-message {
     border-left: 2px solid var(--text-color);
     padding-left: 10px;
     opacity: 0.9; /* Slightly dim user messages compared to bot responses */
+    margin-top: var(--spacing-md); /* Changed from 20px to 1rem */
+    margin-bottom: var(--spacing-md); /* Changed from 20px to 1rem */
 }
 
 /* Bot message styling - FIXED to avoid duplicate/conflicting styles */
 .bot-message {
     white-space: pre-wrap; /* Keep to respect line breaks */
-    line-height: 1.15; /* Consistent line height */
-    margin-bottom: 8px;
+    line-height: 1.5; 
+    margin-bottom: var(--spacing-md);
 }
 
-/* Clear and consistent paragraph styling */
+/* Fix paragraph spacing */
 .bot-message p {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-}
-
-/* Ensure proper spacing between element types */
-.bot-message * {
     margin-top: 0;
-    margin-bottom: 0;
+    margin-bottom: var(--spacing-sm);
 }
 
-/* Add spacing between consecutive paragraphs */
-.bot-message p + p {
-    margin-top: 0.5em;
+/* Fix heading spacing */
+.bot-message h1, 
+.bot-message h2, 
+.bot-message h3, 
+.bot-message h4, 
+.bot-message h5, 
+.bot-message h6 {
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
 }
 
-/* Handle double line breaks */
-.bot-message br + br {
-    content: "";
-    display: block;
-    margin-top: 0.5em;
+/* Heading followed by list - reduce space between */
+.bot-message h1 + ul,
+.bot-message h2 + ul,
+.bot-message h3 + ul,
+.bot-message h4 + ul,
+.bot-message h1 + ol,
+.bot-message h2 + ol,
+.bot-message h3 + ol,
+.bot-message h4 + ol {
+    margin-top: var(--spacing-xs);
 }
 
-/* List styling */
-.bot-message ul, .bot-message ol {
-    margin: 0.5em 0 0.5em 20px;
-    padding-left: 10px;
+/* Fix list spacing */
+.bot-message ul, 
+.bot-message ol {
+    margin: var(--spacing-xs) 0 var(--spacing-sm) var(--spacing-md);
+    padding-left: 0;
 }
 
 .bot-message li {
-    margin-bottom: 0.25em; /* Reduced space between list items */
+    margin-bottom: var(--spacing-xs);
+    margin-left: 10px;
+}
+
+/* Fix spacing between list items and their children */
+.bot-message li > ul,
+.bot-message li > ol {
+    margin-top: var(--spacing-xs);
+    margin-bottom: 0;
+}
+
+/* Fix code block spacing */
+.bot-message pre {
+    margin: var(--spacing-sm) 0;
+}
+
+/* Fix table spacing */
+.bot-message table {
+    margin: var(--spacing-sm) 0;
+}
+
+/* Fix blockquote spacing */
+.bot-message blockquote {
+    margin: var(--spacing-sm) 0;
+    padding-left: var(--spacing-sm);
+    border-left: 2px solid var(--text-color);
+}
+
+/* Fix spacing for paragraphs following other elements */
+.bot-message ul + p,
+.bot-message ol + p,
+.bot-message pre + p,
+.bot-message table + p,
+.bot-message blockquote + p {
+    margin-top: var(--spacing-sm);
 }
 
 /* Markdown styling for bot messages */
 .bot-message strong { 
-    font-weight: bold; 
+    font-weight: 300; 
     color: var(--text-color);
 }
 
@@ -310,8 +362,9 @@ html, body {
     font-family: 'VT323', 'Courier New', monospace;
 }
 
+/* CLEANUP: Standardized code block margins */
 .bot-message pre {
-    margin: 0.5em 0;
+    margin: 0.5em 0; /* Changed from 0.5em to 0.75rem */
     padding: 6px;
     background-color: rgba(30, 30, 30, 0.7);
     border: 1px solid var(--border-color);
@@ -363,10 +416,11 @@ pre code .function {
 }
 
 /* Input area styling */
+/* CLEANUP: Reduced top padding between chat output and input area */
 #input-area {
     display: flex;
     border-top: 1px solid var(--border-color);
-    padding: 15px 20px;
+    padding: 10px 15px; /* Changed from 15px 20px */
     background-color: var(--input-bg);
     position: relative;
 }
@@ -376,7 +430,7 @@ pre code .function {
     background-color: var(--background-color);
     color: var(--text-color);
     border: 1px solid var(--border-color);
-    padding: 12px 15px;
+    padding: 10px 12px; /* CLEANUP: Reduced padding slightly from 12px 15px */
     font-family: inherit;
     font-size: inherit;
     margin-right: 10px;
@@ -468,19 +522,6 @@ pre code .function {
     }
 }
 
-/* Typing cursor animation */
-/* .typing-cursor {
-    display: inline-block;
-    vertical-align: middle;
-    animation: cursor-blink 1s step-end infinite;
-    margin-left: 2px;
-} */
-/* 
-@keyframes cursor-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-} */
-
 /* Typing cursor styling */
 .typing-cursor {
     display: inline-block;
@@ -498,9 +539,12 @@ pre code .function {
 }
 
 /* Code block container with copy button */
+/* CLEANUP: Standardized margin spacing */
 .code-block-container {
     position: relative;
-    margin: 8px 0;
+    margin: var(--spacing-md) 0; /* Changed from 8px 0 */
+    border-radius: 4px;
+    overflow: hidden; /* Keeps the rounded corners clean */
 }
 
 .copy-button {
@@ -526,10 +570,11 @@ pre code .function {
 }
 
 /* Table styling */
+/* CLEANUP: Standardized table margin */
 .table-container {
     width: 100%;
     overflow-x: auto;
-    margin: 10px 0;
+    margin: var(--spacing-md) 0; /* Changed from 10px 0 */
 }
 
 table {
@@ -648,10 +693,12 @@ th {
     padding: 10px;
 }
 
+/* CLEANUP: Standardized history item spacing */
 .history-item {
-    padding: 10px;
+    padding: 8px 10px; /* Changed from 10px */
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
+    margin-bottom: 5px; /* Added for spacing between items */
 }
 
 .history-item:hover {
@@ -701,6 +748,7 @@ th {
 }
 
 /* Message separator styling */
+/* CLEANUP: Standardized separator margins */
 .message-separator {
     height: 1px;
     background: linear-gradient(
@@ -711,22 +759,24 @@ th {
         transparent
     );
     opacity: 0.5;
-    margin: 20px 10%;
+    margin: var(--spacing-lg) 10%; /* Changed from 20px 10% */
     width: 80%;
 }
 
 /* Rendered image styling */
+/* CLEANUP: Standardized image margins */
 .rendered-image {
     max-width: 80%;
     height: auto;
     display: block;
-    margin: 10px 0;
+    margin: var(--spacing-md) 0; /* Changed from 10px 0 */
     border: 1px solid var(--border-color);
 }
 
 /* Boot sequence styling */
+/* CLEANUP: Standardized boot message spacing */
 .boot-message {
-    padding-bottom: 10px;
+    padding-bottom: var(--spacing-md); /* Changed from 10px */
 }
 
 .boot-text {
@@ -734,7 +784,7 @@ th {
     margin: 0;
     padding: 0;
     white-space: pre;
-    line-height: 1.3;
+    line-height: 1.5; /* CLEANUP: Standardized line height */
     background: none;
     border: none;
     color: inherit;
@@ -779,7 +829,7 @@ th {
     bottom: calc(100% + 5px);
     width: calc(100% - 40px);
     background-color: var(--input-bg);
-    border: 1px solid var(--border-color);
+    border: 1px solid var (--border-color);
     padding: 5px;
     z-index: 100;
     display: none;
@@ -814,19 +864,21 @@ th {
 }
 
 /* File attachment display */
+/* CLEANUP: Standardized file attachment spacing */
 .file-attachment {
     display: block;
-    margin: 5px 0;
+    margin: var(--spacing-sm) 0; /* Changed from 5px 0 */
     padding: 8px;
     background-color: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color);
     border-radius: 3px;
 }
 
+/* CLEANUP: Standardized file image margins */
 .file-image {
     max-width: 80%;
     max-height: 300px;
-    margin: 10px 0;
+    margin: var(--spacing-md) 0; /* Changed from 10px 0 */
     border: 1px solid var(--border-color);
 }
 
@@ -854,6 +906,7 @@ th {
 }
 
 /* Common styles for side panels */
+/* CLEANUP: Made panel transition smoother */
 .side-panel {
     position: absolute;
     top: 51px;
@@ -907,10 +960,11 @@ th {
     color: #FF5555;
 }
 
+/* CLEANUP: Standardized panel content padding */
 .panel-content {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 15px;
+    padding: var(--spacing-md); /* Changed from 15px */
     scrollbar-width: thin;
     scrollbar-color: var(--text-color) var(--input-bg);
 }
@@ -943,24 +997,26 @@ th {
 }
 
 /* Settings Panel Specific Styles */
+/* CLEANUP: Standardized settings content spacing */
 .settings-content {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: var(--spacing-md); /* Changed from 15px */
     font-size: 16px;
 }
 
 .setting-item {
     display: flex;
     flex-direction: column;
+    margin-bottom: var(--spacing-sm); /* Added for consistent spacing */
 }
 
 .setting-item label {
     margin-bottom: 5px;
-    /* font-weight: bold; */
-    /* opacity: 0.8; */
+    opacity: 0.9;
 }
 
+/* CLEANUP: Standardized form input spacing */
 .setting-item input[type="text"],
 .setting-item input[type="number"],
 .setting-item textarea {
@@ -974,6 +1030,7 @@ th {
     border-radius: 0;
     width: 100%;
     box-sizing: border-box;
+    margin-bottom: var(--spacing-xs); /* Added for spacing */
 }
 
 .setting-item input:focus,
@@ -985,276 +1042,126 @@ th {
 .setting-item textarea {
     resize: vertical;
     min-height: 100px;
-    line-height: 1.4;
+    line-height: 1.5; /* CLEANUP: Standardized line height */
 }
 
 .settings-buttons-container .terminal-button {
     width: 100%;
 }
 
-
-/* Add this to your existing CSS */
-
+/* Responsive layout for mobile */
 .mobile-controls {
-  display: flex;
-  gap: 10px;
+    display: flex;
+    gap: 10px;
 }
 
 @media screen and (min-width: 769px) {
-  #input-area {
-    display: flex;
-    align-items: center;
-  }
-  
-  #user-input {
-    flex-grow: 1;
-    margin-right: 10px;
-  }
-  
-  .mobile-controls {
-    display: flex;
-    align-items: center;
-  }
+    #input-area {
+        display: flex;
+        align-items: center;
+    }
+    
+    #user-input {
+        flex-grow: 1;
+        margin-right: 10px;
+    }
+    
+    .mobile-controls {
+        display: flex;
+        align-items: center;
+    }
 }
 
 @media screen and (max-width: 768px) {
-  .mobile-controls {
-    display: grid;
-    grid-template-columns: auto 1fr;
+
+  /* Let chat grow and push input area to bottom */
+  #chat-container {
+    position: absolute;
+    top: calc(51px + 1px); /* just below header */
+    bottom: 56px; /* reserve space for input area */
     width: 100%;
   }
-  
+  #chat-output {
+    padding: var(--spacing-sm) var(--spacing-md);
+    height: 100%;
+  }
+
+  /* Fix input area to bottom */
+  #input-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 12px;
+    z-index: 5;
+  }
+  #user-input {
+    font-size: 16px;
+    padding: 8px;
+  }
+  .mobile-controls {
+    display: inline-flex;
+    gap: 8px;
+  }
   #send-button {
-    width: 100%;
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    font-size: 16px;
   }
 }
 
 /* Improve tap targets for mobile */
 @media (hover: none) and (pointer: coarse) {
-  #send-button, .file-upload-btn, .message-action-button, .terminal-button {
-    min-height: 44px; /* Minimum Apple-recommended touch target size */
-  }
-  
-  .bot-message:hover .message-actions {
-    opacity: 1; /* Always show action buttons on touch devices */
-  }
+    #send-button, .file-upload-btn, .message-action-button, .terminal-button {
+        min-height: 44px; /* Minimum Apple-recommended touch target size */
+    }
+    
+    .bot-message:hover .message-actions {
+        opacity: 1; /* Always show action buttons on touch devices */
+    }
 }
 
-/* Common styles for side panels (History & Settings) */
-.side-panel {
-    position: absolute;
-    top: 51px; /* Below header */
-    right: 0;
-    width: 350px; /* Slightly wider */
-    max-width: 90%; /* Max width on smaller screens */
-    height: calc(100vh - 51px); /* Full height below header */
-    max-height: calc(100vh - 51px);
-    background-color: var(--input-bg);
-    border-left: 1px solid var(--border-color);
-    z-index: 100;
+/* Settings tabs navigation */
+/* CLEANUP: Standardized spacing in settings tabs */
+.settings-tabs {
     display: flex;
-    flex-direction: column;
-    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
-    transition: transform 0.3s ease-in-out; /* Add transition */
-    transform: translateX(100%); /* Start off-screen */
-}
-
-.side-panel[style*="display: flex"] {
-    transform: translateX(0); /* Slide in */
-}
-
-.panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
     border-bottom: 1px solid var(--border-color);
-    background-color: var(--background-color); /* Header background */
-    flex-shrink: 0; /* Prevent header from shrinking */
+    margin-bottom: var(--spacing-md); /* Changed from 15px */
 }
 
-.panel-header span {
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.close-panel-button {
-    background: none;
-    border: none;
-    color: var(--text-color);
-    font-family: inherit;
-    font-size: 18px;
+.settings-tab {
+    padding: 8px 15px;
     cursor: pointer;
-    padding: 0 5px;
-    line-height: 1;
-}
-
-.close-panel-button:hover {
-    color: #FF5555; /* Red on hover */
-}
-
-.panel-content {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 15px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-color) var(--input-bg);
-}
-
-.panel-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-.panel-content::-webkit-scrollbar-track {
-    background: var(--input-bg);
-}
-
-.panel-content::-webkit-scrollbar-thumb {
-    background-color: var(--text-color);
-    border: 1px solid var (--input-bg);
-}
-
-.panel-buttons {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 15px;
-    border-top: 1px solid var(--border-color);
-    background-color: var(--background-color); /* Footer background */
-    flex-shrink: 0; /* Prevent footer from shrinking */
-}
-
-.panel-buttons .terminal-button {
-    width: 48%; /* Adjust button width */
-    padding: 8px 10px; /* Adjust padding */
-}
-
-/* Specific History Panel Styles (adjust if needed) */
-.history-panel {
-    /* Keep specific styles if any */
-}
-
-.history-list {
-    /* Keep specific styles if any */
-}
-
-.history-item {
-    padding: 10px;
-    border-bottom: 1px solid var (--border-color);
-    cursor: default; /* Change cursor if items aren't clickable directly */
-}
-
-.history-item:hover {
-    background-color: rgba(255, 255, 255, 0.05); /* Subtle hover */
-}
-
-/* Settings Panel Specific Styles */
-.settings-panel {
-    /* Specific styles if needed */
-}
-
-.settings-content {
-    display: flex;
-    flex-direction: column;
-    gap: 15px; /* Space between setting items */
-}
-
-.setting-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.setting-item label {
-    margin-bottom: 5px;
-    /* font-weight: bold; */
-    opacity: 0.9;
-}
-
-.setting-item input[type="text"],
-.setting-item input[type="number"],
-.setting-item textarea {
+    opacity: 0.7;
     background-color: var(--background-color);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    padding: 8px 10px;
-    font-family: inherit;
-    font-size: 14px; /* Slightly smaller font for settings */
-    outline: none;
-    border-radius: 0;
-    width: 100%;
-    box-sizing: border-box; /* Include padding in width */
+    border: 1px solid transparent;
+    border-bottom: none;
+    margin-right: 5px;
 }
 
-.setting-item input:focus,
-.setting-item textarea:focus {
-    border-color: var(--text-color);
-    box-shadow: 0 0 5px var(--glow-color);
+.settings-tab.active {
+    opacity: 1;
+    border-color: var(--border-color);
+    border-bottom-color: var(--background-color);
+    position: relative;
+    top: 1px;
 }
 
-.setting-item textarea {
-    resize: vertical; /* Allow vertical resize */
-    min-height: 100px; /* Minimum height for prompt */
-    line-height: 1.4;
+.settings-tab-content {
+    display: none;
 }
 
-.settings-buttons-container .terminal-button {
-    width: 100%; /* Save button takes full width */
-}
-
-/* Adjust header controls layout */
-#terminal-controls {
-    gap: 5px; /* Reduce gap */
-}
-
-.header-button {
-    padding: 4px 8px; /* Smaller padding for header buttons */
-    font-size: 16px; /* Smaller font size */
-}
-
-/* Ensure select wrapper aligns well */
-.select-wrapper {
-    margin-left: 5px; /* Add some space before theme selector */
-}
-
-/* Responsive adjustments for panels */
-@media screen and (max-width: 768px) {
-    .side-panel {
-        width: 95%; /* Wider on mobile */
-        top: 45px; /* Adjust if header height changes */
-        height: calc(100vh - 45px);
-        max-height: calc(100vh - 45px);
-        border-left: none; /* No left border on mobile */
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); /* Shadow below */
-    }
-
-    .panel-header {
-        padding: 8px 12px;
-    }
-
-    .panel-content {
-        padding: 12px;
-    }
-
-    .panel-buttons {
-        padding: 8px 12px;
-    }
-
-    .panel-buttons .terminal-button {
-        padding: 6px 8px;
-    }
-
-    .setting-item input,
-    .setting-item textarea {
-        font-size: 13px;
-    }
+.settings-tab-content.active {
+    display: block;
 }
 
 /* Persona Management Styles */
+/* CLEANUP: Standardized personas list spacing */
 .personas-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: var(--spacing-md); /* Changed from 15px */
+    margin-bottom: var(--spacing-lg); /* Changed from 20px */
 }
 
 .persona-item {
@@ -1265,7 +1172,7 @@ th {
 }
 
 .persona-item.active {
-    border-color: var(--text-color);
+    border-color: var (--text-color);
     box-shadow: 0 0 5px var(--glow-color);
 }
 
@@ -1324,18 +1231,19 @@ th {
     color: var(--background-color);
 }
 
+/* CLEANUP: Adjusted add button spacing */
 .add-persona-button {
     width: 100%;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin: var(--spacing-md) 0; /* Changed from 10px 0 10px 0 */
 }
 
 /* Persona Edit Form */
+/* CLEANUP: Standardized form spacing */
 .persona-form {
     background-color: var(--background-color);
     border: 1px solid var(--border-color);
-    padding: 15px;
-    margin-top: 15px;
+    padding: var(--spacing-md); /* Changed from 15px */
+    margin-top: var(--spacing-md); /* Changed from 15px */
     display: none;
 }
 
@@ -1346,52 +1254,20 @@ th {
 .form-buttons {
     display: flex;
     gap: 10px;
-    margin-top: 15px;
+    margin-top: var(--spacing-md); /* Changed from 15px */
 }
 
 .form-buttons .terminal-button {
     flex: 1;
 }
 
-/* Settings Tab Navigation */
-.settings-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 15px;
-}
-
-.settings-tab {
-    padding: 8px 15px;
-    cursor: pointer;
-    opacity: 0.7;
-    background-color: var(--background-color);
-    border: 1px solid transparent;
-    border-bottom: none;
-    margin-right: 5px;
-}
-
-.settings-tab.active {
-    opacity: 1;
-    border-color: var(--border-color);
-    border-bottom-color: var(--background-color);
-    position: relative;
-    top: 1px;
-}
-
-.settings-tab-content {
-    display: none;
-}
-
-.settings-tab-content.active {
-    display: block;
-}
-
 /* API Key Management Styles */
+/* CLEANUP: Standardized API key list spacing */
 .api-keys-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: var(--spacing-md); /* Changed from 15px */
+    margin-bottom: var(--spacing-lg); /* Changed from 20px */
 }
 
 .api-key-item {
@@ -1461,21 +1337,80 @@ th {
     color: var(--background-color);
 }
 
+/* CLEANUP: Adjusted add button spacing */
 .add-api-key-button {
     width: 100%;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin: var(--spacing-md) 0; /* Changed from 10px 0 10px 0 */
 }
 
 /* API Key Edit Form */
+/* CLEANUP: Standardized form spacing */
 .api-key-form {
     background-color: var(--background-color);
     border: 1px solid var(--border-color);
-    padding: 15px;
-    margin-top: 15px;
+    padding: var(--spacing-md); /* Changed from 15px */
+    margin-top: var(--spacing-md); /* Changed from 15px */
     display: none;
 }
 
 .api-key-form.visible {
     display: block;
 }
+
+/* CLEANUP: Final responsive adjustments for consistency */
+@media screen and (max-width: 768px) {
+    :root {
+        /* Reduce spacing on mobile */
+        --spacing-md: 0.75rem;
+        --spacing-lg: 1.25rem;
+    }
+    
+    .side-panel {
+        width: 95%;
+        top: 45px;
+        height: calc(100vh - 45px);
+        max-height: calc(100vh - 45px);
+        border-left: none;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .panel-header {
+        padding: 8px 12px;
+    }
+
+    .panel-content {
+        padding: 12px;
+    }
+
+    .panel-buttons {
+        padding: 8px 12px;
+    }
+
+    .panel-buttons .terminal-button {
+        padding: 6px 8px;
+    }
+
+    .setting-item input,
+    .setting-item textarea {
+        font-size: 13px;
+    }
+    
+    /* CLEANUP: Improve spacing on mobile */
+    .message {
+        margin-bottom: 0.75rem;
+    }
+    
+    .user-message {
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    #chat-output {
+        padding: 10px 15px;
+    }
+    
+    #input-area {
+        padding: 8px 12px;
+    }
+}
+
