@@ -1076,9 +1076,11 @@ th {
 
   /* Let chat grow and push input area to bottom */
   #chat-container {
-    position: absolute;
-    top: calc(51px + 1px); /* just below header */
-    bottom: 56px; /* reserve space for input area */
+    position: relative;
+    flex: 1;                  /* fill remaining vertical space */
+    margin-top: 0;            /* header already in normal flow */
+    margin-bottom: 56px;      /* reserve input-area height */
+    height: auto;             /* let flex sizing do its job */
     width: 100%;
   }
   #chat-output {
