@@ -25,7 +25,7 @@ app.get('/api/getKey', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`
   ========================================================
   🚀 Local development server running at http://localhost:${PORT}
