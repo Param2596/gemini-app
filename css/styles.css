@@ -1,5 +1,3 @@
-
-
 /* Importing the VT323 font */
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
@@ -35,6 +33,33 @@ body.theme-cyan, [data-theme="blue"] {
     --dim-color: #008B8B;
     --border-color: #00FFFF;
     --scan-line-color: rgba(0, 255, 255, 0.1);
+    --glow-color: rgba(85, 153, 255, 0.3);
+}
+
+/* White Theme */
+body.theme-white, [data-theme="white"] {
+    --text-color: #FFFFFF;
+    --dim-color: #AAAAAA;
+    --border-color: #FFFFFF;
+    --scan-line-color: rgba(255, 255, 255, 0.1);
+    --glow-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Red Theme */
+body.theme-red, [data-theme="red"] {
+    --text-color: #FF5555;
+    --dim-color: #8B2A2A;
+    --border-color: #FF5555;
+    --scan-line-color: rgba(255, 85, 85, 0.1);
+    --glow-color: rgba(255, 85, 85, 0.3);
+}
+
+/* Blue Theme */
+body.theme-blue, [data-theme="blue"] {
+    --text-color: #5599FF;
+    --dim-color: #2A558B;
+    --border-color: #5599FF;
+    --scan-line-color: rgba(85, 153, 255, 0.1);
     --glow-color: rgba(85, 153, 255, 0.3);
 }
 
@@ -286,9 +311,9 @@ body::before {
 .message {
     position: relative;
     margin-bottom: var(--spacing-md);
-    text-shadow: 0 0 4px var(--glow-color);
-    animation: textFlicker 0.5s infinite alternate;
-    animation-play-state: paused;
+    /* text-shadow: 0 0 4px var(--glow-color); */
+    /* animation: textFlicker 0.5s infinite alternate; */
+    /* animation-play-state: paused; */
     padding: 10px;
     /* border: 1px solid var(--dim-color); */
     background-color: rgba(0, 0, 0, 0.4);
@@ -820,7 +845,6 @@ th {
 }
 
 /* Message separator styling */
-/* CLEANUP: Standardized separator margins */
 /* .message-separator {
     height: 1px;
     background: linear-gradient(
@@ -831,7 +855,7 @@ th {
         transparent
     );
     opacity: 0.5;
-    margin: var(--spacing-lg) 10%;  Changed from 20px 10% 
+    margin: var(--spacing-lg) 10%;
     width: 80%;
 } */
 
@@ -848,7 +872,12 @@ th {
 /* Boot sequence styling */
 /* CLEANUP: Standardized boot message spacing */
 .boot-message {
-    padding-bottom: var(--spacing-md); /* Changed from 10px */
+    background-color: rgba(0, 0, 0, 0.7);
+    font-family: 'VT323', 'Courier New', monospace;
+    padding: 10px;
+    margin-bottom: var(--spacing-md);
+    border-left: none;
+    border-right: none;
 }
 
 .boot-text {
@@ -1503,4 +1532,88 @@ th {
     #input-area {
         padding: 8px 12px;
     }
+}
+
+/* Mobile-specific text size adjustments */
+@media screen and (max-width: 768px) {
+    /* Reduce base font size */
+    html, body {
+        font-size: 16px; /* Reduced from 20px */
+    }
+    
+    /* Adjust message text */
+    .message {
+        font-size: 15px;
+    }
+    
+    /* Make bot response text more compact */
+    .bot-message {
+        font-size: 15px;
+        line-height: 1.4;
+    }
+    
+    /* Adjust heading sizes in messages */
+    .bot-message h1 {
+        font-size: 18px;
+    }
+    
+    .bot-message h2 {
+        font-size: 17px;
+    }
+    
+    .bot-message h3 {
+        font-size: 16px;
+    }
+    
+    /* More compact code blocks */
+    .bot-message pre,
+    .bot-message code {
+        font-size: 14px;
+    }
+    
+    /* Terminal header text */
+    #terminal-title {
+        font-size: 16px;
+    }
+    
+    /* Status bar */
+    #status-bar {
+        font-size: 12px;
+    }
+    
+    /* Make buttons more compact */
+    .header-button, 
+    #theme-selector {
+        font-size: 14px;
+    }
+}
+
+/* System message styling - add this after the boot-message class */
+.system-message {
+    background-color: rgba(30, 30, 30, 0.8);
+    border-left: none;
+    border-right: none;
+    /* border-top: 0.2px dashed var(--border-color); */
+    /* border-bottom: 0.2px dashed var(--border-color); */
+    padding: 12px;
+    margin-bottom: var(--spacing-md);
+    font-family: 'VT323', 'Courier New', monospace;
+    text-transform: uppercase;
+    text-align: center;
+    letter-spacing: 1px;
+    color: var(--text-color);
+}
+
+.system-message button {
+    margin-top: 8px;
+    margin-left: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+.system-message button:hover {
+    background-color: var(--text-color) !important;
+    color: var(--background-color) !important;
+    box-shadow: 0 0 8px var(--glow-color);
 }

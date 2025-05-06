@@ -172,9 +172,9 @@ class RetroTerminal {
         controlsDiv.appendChild(themeWrapper);
 
 
-        // Create initial boot prompt (moved from initializeTerminal)
+        // Create initial boot prompt with system styling
         const bootPrompt = document.createElement('div');
-        bootPrompt.className = 'message bot-message';
+        bootPrompt.className = 'message system-message'; // Changed from bot-message
         bootPrompt.innerHTML = 'SYSTEM: Terminal ready. <button id="boot-system" style="background-color: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color); cursor: pointer; padding: 5px 10px; font-family: inherit;">INITIALIZE SYSTEM</button>';
 
         this.chatOutput.innerHTML = ''; // Clear existing messages
@@ -222,7 +222,7 @@ class RetroTerminal {
 
         // Create boot message element directly (bypassing addMessage)
         const bootMessageDiv = document.createElement('div');
-        bootMessageDiv.className = 'message bot-message boot-message';
+        bootMessageDiv.className = 'message boot-message'; // Changed: Removed bot-message class
         bootMessageDiv.innerHTML = `<pre class="boot-text">${bootContent}</pre>`;
         this.chatOutput.appendChild(bootMessageDiv);
 
@@ -242,12 +242,14 @@ class RetroTerminal {
 
                 // Add welcome message as a separate message with cursor
                 setTimeout(() => {
-                    // Create welcome message element directly
-                    const welcomeMsg = document.createElement('div');
-                    welcomeMsg.className = 'message bot-message';
-                    welcomeMsg.innerHTML = `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?<span class="typing-cursor"></span>`;
-                    this.chatOutput.appendChild(welcomeMsg);
-
+                    // Add separator between boot sequence and conversation
+                    const separator = document.createElement('div');
+                    separator.className = 'message-separator';
+                    this.chatOutput.appendChild(separator);
+                    
+                    // Now add the welcome message
+                    this.addMessage('bot', `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?`);
+                    
                     document.getElementById('user-input').disabled = false;
                     document.getElementById('send-button').disabled = false;
                     document.getElementById('status-message').textContent = "READY";
