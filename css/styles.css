@@ -1756,3 +1756,39 @@ input[type="range"]::-moz-range-thumb {
     font-size: 12px;
     text-align: right;
 }
+
+/* Update the side panel positioning for mobile */
+@media screen and (max-width: 768px) {
+    /* Other mobile styles remain the same */
+    
+    /* Fix for settings and history panels on mobile */
+    .side-panel {
+        width: 95%;
+        top: 45px;
+        height: calc(100% - 45px - 24px - 62px); /* Subtract header, status bar and input area heights */
+        max-height: calc(100% - 45px - 24px - 62px);
+        border-left: none;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        overflow: hidden; /* Prevent content from spilling */
+        bottom: calc(24px + 62px); /* Position above status bar and input area */
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Ensure panel content is scrollable but buttons remain visible */
+    .panel-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+    }
+
+    /* Make sure buttons container is always visible */
+    .panel-buttons {
+        padding: 8px 12px;
+        position: sticky;
+        bottom: 0;
+        background-color: var(--background-color);
+        z-index: 5;
+        box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
+    }
+}
