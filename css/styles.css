@@ -102,7 +102,7 @@ body::before {
 /* White Theme */
 [data-theme="white"] {
     --text-color: #FFFFFF;
-    --glow-color: rgba(255, 255, 255, 0.3);
+    --glow-color: rgba(255, 255, 255, 0.907);
 }
 
 /* Red Theme */
@@ -157,7 +157,7 @@ body::before {
         inset 0 0 6px var(--glow-color);
     pointer-events: none;
     z-index: 2;
-    border-radius: 20px;
+    /* border-radius: 20px; */
 }
 
 /* Header Bar - Updated to match new nav style */
@@ -176,7 +176,7 @@ body::before {
     font-size: 18px;
     letter-spacing: 1px;
     text-transform: uppercase;
-    text-shadow: 0 0 5px var(--text-color); /* Added glow effect */
+    /* text-shadow: 0 0 5px var(--text-color); Added glow effect */
 }
 
 /* Terminal controls */
