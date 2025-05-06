@@ -57,6 +57,7 @@ class RetroTerminal {
         this.initializeHistoryPanel(); // Renamed for clarity
         this.initializeSettingsPanel(); // Add this line
         this.initializeFileUpload();
+        this.initializeCRTSettings();
 
         // Auto-save chat when window is closed
         window.addEventListener('beforeunload', () => {
@@ -123,12 +124,73 @@ class RetroTerminal {
             this.sendMessage();
         });
 
-        // Enter key in input field
+        // Enter key and Shift+Enter in input field
         this.userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); // Prevent default Enter behavior
                 this.sendMessage();
+            } else if (e.key === 'Enter' && e.shiftKey) {
+                e.preventDefault(); // Prevent default Enter behavior
+                const cursorPosition = this.userInput.selectionStart;
+                const value = this.userInput.value;
+                this.userInput.value = value.slice(0, cursorPosition) + '\n' + value.slice(cursorPosition);
+                this.userInput.selectionStart = this.userInput.selectionEnd = cursorPosition + 1;
             }
         });
+
+        // Handle paste event for files and images
+        this.userInput.addEventListener('paste', (e) => {
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.kind === 'file') {
+                    const file = item.getAsFile();
+                    if (file) {
+                        this.handlePastedFile(file);
+                    }
+                }
+            }
+        });
+    }
+
+    // New method to handle pasted files
+    handlePastedFile(file) {
+        const previewContainer = document.getElementById('file-preview-container');
+
+        // Show the preview container if it's not already visible
+        if (previewContainer.style.display !== 'flex') {
+            previewContainer.style.display = 'flex';
+            previewContainer.innerHTML = ''; // Clear any previous previews
+            this.attachedFiles = []; // Clear the array too
+        }
+
+        // Check file size (e.g., 20MB limit)
+        if (file.size > 20 * 1024 * 1024) {
+            this.addMessage('error', `File "${file.name}" is too large (max 20MB).`);
+            return;
+        }
+
+        // Add to attached files array
+        this.attachedFiles.push(file);
+
+        // Create preview element
+        const preview = document.createElement('div');
+        preview.className = 'file-preview';
+        preview.dataset.fileName = file.name; // Store filename for removal
+
+        // Create remove button
+        const removeButton = document.createElement('span');
+        removeButton.className = 'file-preview-remove';
+        removeButton.innerHTML = '&times;'; // 'x' symbol
+        removeButton.title = 'Remove file';
+        removeButton.onclick = () => this.removePreview(file.name);
+
+        // Set preview content (filename + remove button)
+        preview.textContent = file.name; // Show filename
+        preview.appendChild(removeButton); // Add remove button
+
+        // Append preview to container
+        previewContainer.appendChild(preview);
     }
 
     // Renamed and updated to handle all header buttons
@@ -1142,6 +1204,19 @@ class RetroTerminal {
                     <label for="setting-model">Model:</label>
                     <input type="text" id="setting-model">
                 </div>
+                <div class="setting-item crt-settings">
+                    <label for="setting-crt-lines">CRT Scanlines:</label>
+                    <div class="toggle-control">
+                        <input type="checkbox" id="setting-crt-lines">
+                        <label for="setting-crt-lines" class="toggle-label"></label>
+                        <span class="toggle-text">Enable CRT lines</span>
+                    </div>
+                </div>
+                <div class="setting-item crt-opacity-slider" style="display: none;">
+                    <label for="setting-crt-opacity">Scanline Opacity:</label>
+                    <input type="range" id="setting-crt-opacity" min="0.05" max="0.3" step="0.05" value="0.1">
+                    <div class="slider-value">10%</div>
+                </div>
             </div>
             
             <div id="personas-settings" class="settings-tab-content">
@@ -1340,7 +1415,72 @@ class RetroTerminal {
         }
     }
 
-    // Add this to the RetroTerminal class
+        // Add this method to the RetroTerminal class
+    
+    initializeCRTSettings() {
+        // Load saved CRT settings
+        const crtLinesEnabled = JSON.parse(localStorage.getItem('crtLinesEnabled') || 'false');
+        const crtOpacity = localStorage.getItem('crtLinesOpacity') || '0.1';
+        
+        // Apply saved settings
+        if (crtLinesEnabled) {
+            document.body.classList.add('crt-lines-enabled');
+            document.documentElement.style.setProperty('--scan-line-opacity', crtOpacity);
+        }
+        
+        // Set up event listeners for settings controls
+        document.getElementById('setting-crt-lines').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                document.body.classList.add('crt-lines-enabled');
+                document.querySelector('.crt-opacity-slider').style.display = 'flex';
+            } else {
+                document.body.classList.remove('crt-lines-enabled');
+                document.querySelector('.crt-opacity-slider').style.display = 'none';
+            }
+            localStorage.setItem('crtLinesEnabled', e.target.checked);
+        });
+        
+        document.getElementById('setting-crt-opacity').addEventListener('input', (e) => {
+            const opacity = e.target.value;
+            document.documentElement.style.setProperty('--scan-line-opacity', opacity);
+            document.querySelector('.slider-value').textContent = `${Math.round(opacity * 100)}%`;
+            localStorage.setItem('crtLinesOpacity', opacity);
+        });
+    }
+    
+    // Update the toggleSettingsPanel method to include the CRT settings
+    toggleSettingsPanel() {
+        const panel = document.querySelector('#settings-panel');
+        const historyPanel = document.querySelector('#history-panel');
+        if (panel.style.display === 'none') {
+            // Hide history panel if open
+            if (historyPanel.style.display !== 'none') {
+                historyPanel.style.display = 'none';
+            }
+            // Populate with current settings
+            document.getElementById('setting-temperature').value = CONFIG.TEMPERATURE || 1.0;
+            document.getElementById('setting-top-k').value = CONFIG.TOP_K || 40;
+            document.getElementById('setting-top-p').value = CONFIG.TOP_P || 0.95;
+            document.getElementById('setting-model').value = CONFIG.MODEL || 'gemini-1.5-flash';
+            
+            // Update CRT settings UI
+            const crtLinesEnabled = JSON.parse(localStorage.getItem('crtLinesEnabled') || 'false');
+            const crtOpacity = localStorage.getItem('crtLinesOpacity') || '0.1';
+            
+            document.getElementById('setting-crt-lines').checked = crtLinesEnabled;
+            document.getElementById('setting-crt-opacity').value = crtOpacity;
+            document.querySelector('.slider-value').textContent = `${Math.round(crtOpacity * 100)}%`;
+            document.querySelector('.crt-opacity-slider').style.display = crtLinesEnabled ? 'flex' : 'none';
+            
+            // Display personas
+            this.displayPersonas();
+            
+            panel.style.display = 'flex';
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+        // Add this to the RetroTerminal class
 
     // Add this after the initializeSettingsPanel() method
     initializePersonaManagement() {
@@ -1399,7 +1539,22 @@ class RetroTerminal {
         
         personasList.innerHTML = '';
         
-        personas.forEach(persona => {
+        // Sort personas: active/default first, then alphabetically
+        // This ensures Iris (default/active) appears first, followed by others in alphabetical order
+        const sortedPersonas = [...personas].sort((a, b) => {
+            // Active personas first
+            if (a.active && !b.active) return -1;
+            if (!a.active && b.active) return 1;
+            
+            // Default personas next
+            if (a.default && !b.default) return -1;
+            if (!a.default && b.default) return 1;
+            
+            // Then alphabetically by name
+            return a.name.localeCompare(b.name);
+        });
+        
+        sortedPersonas.forEach(persona => {
             const personaItem = document.createElement('div');
             personaItem.className = `persona-item ${persona.active ? 'active' : ''}`;
             
@@ -1423,21 +1578,21 @@ class RetroTerminal {
         // Add event listeners
         document.querySelectorAll('.select-persona').forEach(button => {
             button.addEventListener('click', e => {
-                const personaId = e.target.dataset.id;
+                const personaId = e.target.getAttribute('data-id');
                 this.activatePersona(personaId);
             });
         });
         
         document.querySelectorAll('.edit-persona').forEach(button => {
             button.addEventListener('click', e => {
-                const personaId = e.target.dataset.id;
+                const personaId = e.target.getAttribute('data-id');
                 this.editPersona(personaId);
             });
         });
         
         document.querySelectorAll('.delete-persona').forEach(button => {
             button.addEventListener('click', e => {
-                const personaId = e.target.dataset.id;
+                const personaId = e.target.getAttribute('data-id');
                 this.deletePersona(personaId);
             });
         });

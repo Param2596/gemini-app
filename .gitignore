@@ -58,3 +58,6 @@ tmp/
 temp/
 
 .cache
+cypress
+cypress.config.js
+package-lock.json
