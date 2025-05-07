@@ -382,10 +382,24 @@ body:not(.crt-lines-enabled)::before {
 
 /* Bot message styling - Updated with new styling */
 .bot-message {
-    white-space: pre-wrap; /* Keep to respect line breaks */
+    /* white-space: pre-wrap; Keep to respect line breaks */
     line-height: 1.5; 
     margin-bottom: var(--spacing-md);
     border-left: 1px solid var(--text-color); /* Changed from 3px to 2px */
+}
+
+/* Fix for extra space at top of message content */
+.message-content {
+    margin-top: 0;
+    padding-top: 0;
+    display: inline-block; /* Prevents extra space above first line */
+    width: 100%;
+}
+
+/* First element in a bot message shouldn't have top margin */
+.message-content > *:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
 }
 
 /* Fix paragraph spacing */
@@ -1607,7 +1621,7 @@ th {
     /* Make bot response text more compact */
     .bot-message {
         font-size: 15px;
-        line-height: 1.4;
+        /* line-height: 0.8; */
     }
     
     /* Adjust heading sizes in messages */

@@ -12,12 +12,8 @@ class RetroTerminal {
         this.currentConversationId = Date.now().toString();
         this.attachedFiles = [];
 
-        // Set amber as default theme if no theme is saved
-        if (!localStorage.getItem('geminiTerminalTheme')) {
-            localStorage.setItem('geminiTerminalTheme', 'amber');
-            document.documentElement.setAttribute('data-theme', 'amber');
-        }
-
+        // Theme initialization is now centralized in initializeEventListeners
+        
         // Update Remarkable initialization
         try {
             this.md = new Remarkable('full', {
@@ -110,25 +106,8 @@ class RetroTerminal {
 
     // Initialize event listeners
     initializeEventListeners() {
-        // Load saved theme if available
-        const savedTheme = localStorage.getItem('geminiTerminalTheme');
-        if (savedTheme) {
-            this.themeSelector.value = savedTheme;
-            document.documentElement.setAttribute('data-theme', savedTheme);
-        } else {
-            // Set amber as default if no saved theme
-            this.themeSelector.value = 'amber';
-            document.documentElement.setAttribute('data-theme', 'amber');
-            localStorage.setItem('geminiTerminalTheme', 'amber');
-        }
-
-        // Theme selector
-        this.themeSelector.addEventListener('change', (e) => {
-            const theme = e.target.value;
-            document.documentElement.setAttribute('data-theme', theme);
-            // Save theme preference to localStorage
-            localStorage.setItem('geminiTerminalTheme', theme);
-        });
+        // Theme handling - centralized here
+        this.initializeTheme();
 
         // Send button
         this.sendButton.addEventListener('click', () => {
@@ -161,6 +140,30 @@ class RetroTerminal {
                     }
                 }
             }
+        });
+    }
+
+    // New helper method to centralize theme handling
+    initializeTheme() {
+        // Load saved theme if available, otherwise use amber
+        const savedTheme = localStorage.getItem('geminiTerminalTheme');
+        
+        if (savedTheme) {
+            this.themeSelector.value = savedTheme;
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        } else {
+            // Set amber as default if no saved theme
+            this.themeSelector.value = 'amber';
+            document.documentElement.setAttribute('data-theme', 'amber');
+            localStorage.setItem('geminiTerminalTheme', 'amber');
+        }
+
+        // Handle theme changes
+        this.themeSelector.addEventListener('change', (e) => {
+            const theme = e.target.value;
+            document.documentElement.setAttribute('data-theme', theme);
+            // Save theme preference to localStorage
+            localStorage.setItem('geminiTerminalTheme', theme);
         });
     }
 
@@ -268,13 +271,24 @@ class RetroTerminal {
             return;
         }
 
+        // Check if required elements exist
+        const chatOutput = document.getElementById('chat-output');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const statusMessage = document.getElementById('status-message');
+        
+        if (!chatOutput || !userInput || !sendButton || !statusMessage) {
+            console.error('Required DOM elements not found for boot sequence');
+            return;
+        }
+
         // Play boot sound if available
         if (this.bootSound && this.bootSound.play) {
             this.bootSound.play().catch(e => console.log('Audio playback error:', e));
         }
 
         // Clear chat and show boot sequence
-        this.chatOutput.innerHTML = '';
+        chatOutput.innerHTML = '';
 
         // CHANGE: Create a single combined boot message
         const bootSteps = [
@@ -297,44 +311,59 @@ class RetroTerminal {
         const bootMessageDiv = document.createElement('div');
         bootMessageDiv.className = 'message boot-message'; // Changed: Removed bot-message class
         bootMessageDiv.innerHTML = `<pre class="boot-text">${bootContent}</pre>`;
-        this.chatOutput.appendChild(bootMessageDiv);
+        chatOutput.appendChild(bootMessageDiv);
 
         let delay = 150;
         let currentStepIndex = 0;
+        let bootInterval;
 
-        // Display boot sequence one step at a time
-        const bootInterval = setInterval(() => {
-            if (currentStepIndex < bootSteps.length) {
-                // Show up to the current step
-                bootMessageDiv.innerHTML = `<pre class="boot-text">${bootSteps.slice(0, currentStepIndex + 1).join('\n')}</pre>`;
-                currentStepIndex++;
-                this.chatOutput.scrollTop = this.chatOutput.scrollHeight;
-            } else {
-                // Boot sequence complete
-                clearInterval(bootInterval);
+        try {
+            // Display boot sequence one step at a time
+            bootInterval = setInterval(() => {
+                if (currentStepIndex < bootSteps.length) {
+                    // Show up to the current step
+                    bootMessageDiv.innerHTML = `<pre class="boot-text">${bootSteps.slice(0, currentStepIndex + 1).join('\n')}</pre>`;
+                    currentStepIndex++;
+                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                } else {
+                    // Boot sequence complete
+                    clearInterval(bootInterval);
+                    bootInterval = null;
 
-                // Add welcome message as a separate message with cursor
-                setTimeout(() => {
-                    // Add separator between boot sequence and conversation
-                    const separator = document.createElement('div');
-                    separator.className = 'message-separator';
-                    this.chatOutput.appendChild(separator);
-                    
-                    // Now add the welcome message
-                    this.addMessage('bot', `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?`);
-                    
-                    document.getElementById('user-input').disabled = false;
-                    document.getElementById('send-button').disabled = false;
-                    document.getElementById('status-message').textContent = "READY";
-                    document.getElementById('user-input').focus();
-                }, delay);
-            }
-        }, delay);
+                    // Add welcome message as a separate message with cursor
+                    setTimeout(() => {
+                        try {
+                            // Add separator between boot sequence and conversation
+                            const separator = document.createElement('div');
+                            separator.className = 'message-separator';
+                            chatOutput.appendChild(separator);
+                            
+                            // Now add the welcome message
+                            this.addMessage('bot', `Hello! I'm ${CONFIG.BOT_NAME}. How can I assist you today?`);
+                            
+                            userInput.disabled = false;
+                            sendButton.disabled = false;
+                            statusMessage.textContent = "READY";
+                            userInput.focus();
+                        } catch (e) {
+                            console.error('Error in boot sequence completion:', e);
+                            statusMessage.textContent = "BOOT ERROR";
+                        }
+                    }, delay);
+                }
+            }, delay);
+        } catch (e) {
+            // Clean up if there's an error
+            if (bootInterval) clearInterval(bootInterval);
+            console.error('Error in boot sequence:', e);
+            statusMessage.textContent = "BOOT ERROR";
+            return;
+        }
 
         // Disable input during boot sequence
-        document.getElementById('user-input').disabled = true;
-        document.getElementById('send-button').disabled = true;
-        document.getElementById('status-message').textContent = "BOOTING";
+        userInput.disabled = true;
+        sendButton.disabled = true;
+        statusMessage.textContent = "BOOTING";
     }
 
     // Add a message to the chat
@@ -396,10 +425,6 @@ class RetroTerminal {
                 
                 // Add separator after message (except for welcome/boot messages)
                 if (!content.includes('BIOS') && !content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
-                    const separator = document.createElement('div');
-                    separator.className = 'message-separator';
-                    messageDiv.appendChild(separator);
-                    
                     // Add action buttons
                     const actionsDiv = document.createElement('div');
                     actionsDiv.className = 'message-actions';
@@ -422,6 +447,11 @@ class RetroTerminal {
                     
                     // Add actions to message
                     messageDiv.appendChild(actionsDiv);
+                    
+                    // Add separator after buttons (moved from before buttons)
+                    const separator = document.createElement('div');
+                    separator.className = 'message-separator';
+                    messageDiv.appendChild(separator);
                 }
             } else {
                 // Existing code for new messages with typing animation
@@ -457,10 +487,6 @@ class RetroTerminal {
                     
                     // Only add separator and buttons for normal bot messages
                     if (!content.includes('BIOS') && !content.includes(`Hello! I'm ${CONFIG.BOT_NAME}`)) {
-                        const separator = document.createElement('div');
-                        separator.className = 'message-separator';
-                        messageDiv.appendChild(separator);
-                        
                         // Add action buttons
                         const actionsDiv = document.createElement('div');
                         actionsDiv.className = 'message-actions';
@@ -483,6 +509,11 @@ class RetroTerminal {
                         
                         // Add actions to message
                         messageDiv.appendChild(actionsDiv);
+                        
+                        // Add separator after buttons (moved from before buttons)
+                        const separator = document.createElement('div');
+                        separator.className = 'message-separator';
+                        messageDiv.appendChild(separator);
                     }
                     
                     // Scroll to ensure everything is visible
@@ -504,6 +535,9 @@ class RetroTerminal {
         try {
             // Pre-process custom terminal elements
             text = this.preprocessText(text);
+            
+            // Remove leading whitespace that might cause extra space at top
+            text = text.trimStart();
 
             // Convert markdown to HTML using remarkable
             let html = this.md.render(text);
@@ -694,6 +728,9 @@ class RetroTerminal {
                 this.lastTypingCancellation();
             }
 
+            // Remove leading whitespace in text
+            text = text.trimStart();
+
             // Split into paragraphs or code blocks
             // Regex to split by triple backticks (keeping delimiters) or double newlines
             const chunks = text.split(/(\n```[\s\S]*?\n```\n?|\n\s*\n)/g).filter(Boolean);
@@ -869,6 +906,7 @@ class RetroTerminal {
     }
 
     // Update saveCurrentChat to filter out boot/welcome messages
+
 
     saveCurrentChat() {
         // Only save if we have messages
@@ -1060,44 +1098,67 @@ class RetroTerminal {
         // Save current chat before starting new one
         this.saveCurrentChat();
 
-        // Clear conversation history in the API object
-        if (window.geminiAPI) {
-            window.geminiAPI.clearHistory();
-        }
+        try {
+            // Clear conversation history in the API object
+            if (window.geminiAPI) {
+                try {
+                    window.geminiAPI.clearHistory();
+                    console.log("Chat history cleared successfully");
+                } catch (error) {
+                    console.error("Failed to clear chat history:", error);
+                    // Continue despite error - we can still create a new chat UI
+                }
+            } else {
+                console.warn("geminiAPI not available, creating new chat without clearing history");
+            }
 
-        // Generate new conversation ID
-        this.currentConversationId = Date.now().toString();
+            // Generate new conversation ID
+            this.currentConversationId = Date.now().toString();
 
-        // Clear chat
-        this.chatOutput.innerHTML = '';
+            // Clear chat
+            this.chatOutput.innerHTML = '';
 
-        // Get time context
-        const timeSinceLastChat = this.getTimeSinceLastConversation();
-        const currentDateTime = new Date().toLocaleString();
+            // Get time context
+            const timeSinceLastChat = this.getTimeSinceLastConversation();
+            const currentDateTime = new Date().toLocaleString();
 
-        // Create welcome message with time info and use current persona name
-        let welcomeMessage = `Hello! I'm ${CONFIG.BOT_NAME}. I'm here to assist you.`;
+            // Create welcome message with time info and use current persona name
+            let welcomeMessage = `Hello! I'm ${CONFIG.BOT_NAME}. I'm here to assist you.`;
 
-        if (timeSinceLastChat) {
-            welcomeMessage += ` `;
-        }
+            if (timeSinceLastChat) {
+                welcomeMessage += ` `;
+            }
 
-        welcomeMessage += " How can I assist you today?";
+            welcomeMessage += " How can I assist you today?";
 
-        // Add welcome message with cursor
-        this.addMessage('bot', welcomeMessage);
+            // Add welcome message with cursor
+            this.addMessage('bot', welcomeMessage);
 
-        // Save this as the last conversation time
-        this.saveLastConversationTimestamp();
+            // Save this as the last conversation time
+            this.saveLastConversationTimestamp();
 
-        // Reset input field
-        this.userInput.value = '';
-        this.userInput.focus();
+            // Reset input field
+            this.userInput.value = '';
+            this.userInput.focus();
 
-        // Close history panel if open
-        const historyPanel = document.querySelector('#history-panel');
-        if (historyPanel && historyPanel.style.display !== 'none') {
-            historyPanel.style.display = 'none';
+            // Close history panel if open
+            const historyPanel = document.querySelector('#history-panel');
+            if (historyPanel && historyPanel.style.display !== 'none') {
+                historyPanel.style.display = 'none';
+            }
+            
+            // Update status
+            document.getElementById('status-message').textContent = "NEW CHAT STARTED";
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = "READY";
+            }, 2000);
+        } catch (error) {
+            console.error("Error starting new chat:", error);
+            this.addMessage('error', "Failed to start new chat. Please try again.");
+            document.getElementById('status-message').textContent = "ERROR";
+            setTimeout(() => {
+                document.getElementById('status-message').textContent = "READY";
+            }, 2000);
         }
     }
 
@@ -1181,7 +1242,7 @@ class RetroTerminal {
         settingsPanel.id = 'settings-panel';
         settingsPanel.className = 'side-panel settings-panel'; // Added common class
         settingsPanel.style.display = 'none';
-
+        
         const settingsHeader = document.createElement('div');
         settingsHeader.className = 'panel-header'; // Common class
         settingsHeader.innerHTML = '<span>SETTINGS</span><button class="close-panel-button" data-panel="settings-panel">X</button>';
@@ -1196,17 +1257,17 @@ class RetroTerminal {
                 <div class="settings-tab active" data-tab="general-settings">GENERAL</div>
                 <div class="settings-tab" data-tab="personas-settings">PERSONAS</div>
                 <div class="settings-tab" data-tab="api-keys-settings">API KEYS</div>
-            </div>
-            
+                    </div>
+                    
             <div id="general-settings" class="settings-tab-content active">
                 <div class="setting-item">
                     <label for="setting-temperature">Temperature:</label>
                     <input type="number" id="setting-temperature" step="0.1" min="0" max="2.0">
-                </div>
+                    </div>
                 <div class="setting-item">
                     <label for="setting-top-k">Top K:</label>
                     <input type="number" id="setting-top-k" step="1" min="1">
-                </div>
+                    </div>
                 <div class="setting-item">
                     <label for="setting-top-p">Top P:</label>
                     <input type="number" id="setting-top-p" step="0.05" min="0" max="1">
@@ -1228,13 +1289,13 @@ class RetroTerminal {
                     <input type="range" id="setting-crt-opacity" min="0.05" max="0.3" step="0.05" value="0.1">
                     <div class="slider-value">10%</div>
                 </div>
-            </div>
-            
+                    </div>
+                    
             <div id="personas-settings" class="settings-tab-content">
                 <div id="personas-list" class="personas-list">
                     <!-- Personas will be added here dynamically -->
-                </div>
-                
+                    </div>
+                    
                 <button id="add-persona-button" class="terminal-button add-persona-button">ADD NEW PERSONA</button>
                 
                 <div class="persona-form">
@@ -1253,32 +1314,33 @@ class RetroTerminal {
                             <button type="button" id="cancel-persona-button" class="terminal-button">CANCEL</button>
                         </div>
                     </form>
-                </div>
-            </div>
-            
-            <div id="api-keys-settings" class="settings-tab-content">
-                <div id="api-keys-list" class="api-keys-list">
-                    <!-- API keys will be added here dynamically -->
+                    </div>
                 </div>
                 
-                <button id="add-api-key-button" class="terminal-button add-api-key-button">ADD NEW API KEY</button>
-                
-                <div class="api-key-form">
-                    <form id="api-key-form">
-                        <input type="hidden" id="api-key-id">
-                        <div class="setting-item">
-                            <label for="api-key-name">API Key Name:</label>
-                            <input type="text" id="api-key-name" placeholder="e.g. My Personal Key">
-                        </div>
-                        <div class="setting-item">
-                            <label for="api-key-value">API Key:</label>
-                            <input type="password" id="api-key-value" placeholder="Enter your Gemini API key">
-                        </div>
-                        <div class="form-buttons">
-                            <button type="button" id="save-api-key-button" class="terminal-button">SAVE</button>
-                            <button type="button" id="cancel-api-key-button" class="terminal-button">CANCEL</button>
-                        </div>
-                    </form>
+                <div id="api-keys-settings" class="settings-tab-content">
+                    <div id="api-keys-list" class="api-keys-list">
+                        <!-- API keys will be added here dynamically -->
+                    </div>
+                    
+                    <button id="add-api-key-button" class="terminal-button add-api-key-button">ADD NEW API KEY</button>
+                    
+                    <div class="api-key-form">
+                        <form id="api-key-form">
+                            <input type="hidden" id="api-key-id">
+                            <div class="setting-item">
+                                <label for="api-key-name">API Key Name:</label>
+                                <input type="text" id="api-key-name" placeholder="e.g. My Personal Key">
+                            </div>
+                            <div class="setting-item">
+                                <label for="api-key-value">API Key:</label>
+                                <input type="password" id="api-key-value" placeholder="Enter your Gemini API key">
+                            </div>
+                            <div class="form-buttons">
+                                <button type="button" id="save-api-key-button" class="terminal-button">SAVE</button>
+                                <button type="button" id="cancel-api-key-button" class="terminal-button">CANCEL</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         `;
@@ -1491,7 +1553,7 @@ class RetroTerminal {
             panel.style.display = 'none';
         }
     }
-        // Add this to the RetroTerminal class
+    // Add this to the RetroTerminal class
 
     // Add this after the initializeSettingsPanel() method
     initializePersonaManagement() {
@@ -1543,7 +1605,52 @@ class RetroTerminal {
             }
         }
         
+        // Synchronize CONFIG with active persona
+        this.syncConfigWithActivePersona(personas);
+        
         return personas;
+    }
+    
+    // New helper method to ensure CONFIG and active persona are in sync
+    syncConfigWithActivePersona(personas) {
+        if (!personas || personas.length === 0) return;
+        
+        // Find the active persona
+        const activePersona = personas.find(p => p.active);
+        
+        if (activePersona) {
+            // Update CONFIG to match the active persona
+            if (CONFIG.BOT_NAME !== activePersona.name || 
+                CONFIG.SYSTEM_PROMPT !== activePersona.systemPrompt) {
+                
+                CONFIG.BOT_NAME = activePersona.name;
+                CONFIG.SYSTEM_PROMPT = activePersona.systemPrompt;
+                
+                // Save the updated config
+                if (typeof saveConfigToStorage === 'function') {
+                    saveConfigToStorage();
+                    console.log(`CONFIG synchronized with active persona: ${activePersona.name}`);
+                }
+                
+                // Update API settings if available
+                if (window.geminiAPI && typeof window.geminiAPI.updateSettings === 'function') {
+                    window.geminiAPI.updateSettings(CONFIG);
+                }
+            }
+        } else {
+            // If no active persona found, make the first one active
+            if (personas.length > 0) {
+                personas[0].active = true;
+                CONFIG.BOT_NAME = personas[0].name;
+                CONFIG.SYSTEM_PROMPT = personas[0].systemPrompt;
+                
+                // Save changes
+                localStorage.setItem('geminiPersonas', JSON.stringify(personas));
+                if (typeof saveConfigToStorage === 'function') {
+                    saveConfigToStorage();
+                }
+            }
+        }
     }
 
     // Save personas to storage
@@ -1642,6 +1749,11 @@ class RetroTerminal {
         
         // Save updated personas
         this.savePersonas(personas);
+        
+        // Ensure CONFIG is saved
+        if (typeof saveConfigToStorage === 'function') {
+            saveConfigToStorage();
+        }
         
         // Update display
         this.displayPersonas();
@@ -1802,8 +1914,11 @@ class RetroTerminal {
 
     // NEW: Initialize API Key Management
     initializeApiKeyManagement() {
-        // Ensure we have the default API keys in storage
+        // Ensure we have at least one API key in storage
         this.loadApiKeys();
+        
+        // Display API keys
+        this.displayApiKeys();
         
         // Add event listeners for switching tabs in settings panel
         document.addEventListener('click', e => {
