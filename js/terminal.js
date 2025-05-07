@@ -12,6 +12,12 @@ class RetroTerminal {
         this.currentConversationId = Date.now().toString();
         this.attachedFiles = [];
 
+        // Set amber as default theme if no theme is saved
+        if (!localStorage.getItem('geminiTerminalTheme')) {
+            localStorage.setItem('geminiTerminalTheme', 'amber');
+            document.documentElement.setAttribute('data-theme', 'amber');
+        }
+
         // Update Remarkable initialization
         try {
             this.md = new Remarkable('full', {
@@ -109,6 +115,11 @@ class RetroTerminal {
         if (savedTheme) {
             this.themeSelector.value = savedTheme;
             document.documentElement.setAttribute('data-theme', savedTheme);
+        } else {
+            // Set amber as default if no saved theme
+            this.themeSelector.value = 'amber';
+            document.documentElement.setAttribute('data-theme', 'amber');
+            localStorage.setItem('geminiTerminalTheme', 'amber');
         }
 
         // Theme selector
@@ -1509,17 +1520,27 @@ class RetroTerminal {
     loadPersonas() {
         let personas = JSON.parse(localStorage.getItem('geminiPersonas') || '[]');
         
-        // If no personas stored, initialize with default Syntra persona
+        // If no personas stored, trigger the initialization from config.js
         if (personas.length === 0) {
-            const defaultPersona = {
-                id: 'default',
-                name: CONFIG.BOT_NAME || 'Syntra',
-                systemPrompt: CONFIG.SYSTEM_PROMPT || '',
-                default: true,
-                active: true
-            };
-            personas = [defaultPersona];
-            localStorage.setItem('geminiPersonas', JSON.stringify(personas));
+            // Call the initialization function from config.js if it exists
+            if (typeof initializeDefaultPersonas === 'function') {
+                initializeDefaultPersonas();
+                // Reload the personas after initialization
+                personas = JSON.parse(localStorage.getItem('geminiPersonas') || '[]');
+            } else {
+                // Fallback in case initializeDefaultPersonas isn't available
+                console.warn('initializeDefaultPersonas function not found in config.js');
+                // Create a minimal default persona as fallback
+                const defaultPersona = {
+                    id: 'default',
+                    name: CONFIG.BOT_NAME || 'Iris',
+                    systemPrompt: CONFIG.SYSTEM_PROMPT || '',
+                    default: true,
+                    active: true
+                };
+                personas = [defaultPersona];
+                localStorage.setItem('geminiPersonas', JSON.stringify(personas));
+            }
         }
         
         return personas;

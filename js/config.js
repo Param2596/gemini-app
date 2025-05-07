@@ -31,8 +31,9 @@ function initializeDefaultPersonas() {
     // Check if personas already exist in localStorage
     let personas = JSON.parse(localStorage.getItem('geminiPersonas') || '[]');
     
-    // If empty, create default personas
-    if (personas.length === 1) {
+    // Always ensure we have the three standard personas
+    // If empty or doesn't have exactly 3 personas, recreate them
+    if (personas.length !== 3) {
         personas = [
             {
                 id: 'iris',
@@ -83,6 +84,11 @@ function initializeDefaultPersonas() {
         
         // Save to localStorage
         localStorage.setItem('geminiPersonas', JSON.stringify(personas));
+        
+        // Also update the global CONFIG to use Iris as default
+        CONFIG.BOT_NAME = "Iris";
+        CONFIG.SYSTEM_PROMPT = personas[0].systemPrompt;
+        saveConfigToStorage();
     }
 }
 
