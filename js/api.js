@@ -74,7 +74,7 @@ class GeminiAPI {
                     parts: [{ text: "I understand and will act as SYNTRA with the personality you described." }]
                 });
             } else {
-                // For subsequent exchanges, include all previous history up to a reasonable limit
+                // For subsequent exchanges, include all previous history
                 // Start with system prompt
                 contents.push({
                     role: "user", 
@@ -86,10 +86,9 @@ class GeminiAPI {
                     parts: [{ text: "I understand and will act as SYNTRA with the personality you described." }]
                 });
                 
-                // Add conversation history (skipping first two items which were system messages)
-                // We use slice to limit history if it gets too long
-                // Limit to the last 10 exchanges (20 messages) to avoid token limits
-                const historyToInclude = this.history.slice(0, -1).slice(-20);
+                // Add all conversation history (skipping first two items which were system messages)
+                // Use the entire history instead of limiting to 20 messages
+                const historyToInclude = this.history.slice(0, -1);
                 
                 for (const item of historyToInclude) {
                     contents.push({
@@ -223,9 +222,9 @@ class GeminiAPI {
                 parts: [{ text: "I understand and will act as SYNTRA with the personality you described." }]
             });
             
-            // Include conversation history (if not the first exchange)
+            // Include all conversation history (if not the first exchange)
             // Skip the last item which was just added and will be included separately
-            const historyToInclude = this.history.slice(2, -1).slice(-20);
+            const historyToInclude = this.history.slice(2, -1);
             
             for (const item of historyToInclude) {
                 contents.push({
